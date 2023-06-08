@@ -14,8 +14,8 @@ str(SPY)
 head(SPY)
 
 #plot s&p 500 series
-autoplot(SPY$SPY.Adjusted, ts.colour = "dodgerblue3", main = "SPY data from 1993-01-29 to 2023-06-07") + 
-  labs(x = "Observation Date", y = "SPY daily adj. closing price") 
+autoplot(SPY$SPY.Adjusted, ts.colour = "dodgerblue3", main = "SPY data from 1993-01-29 to 2023-06-07",
+         xlab = "Observation Date", ylab = "SPY daily adj. closing price") 
 
 #create log returns
 #step 1 convert to a data frame (can be tibble too)
@@ -28,7 +28,5 @@ spy_df = spy_df[-1,]
 #show some data
 head(spy_df)
 #plot s&p 500 series
-ggplot(data = spy_df, mapping = aes(x = date, y = logDiff.Adjusted)) +
-  geom_line() +
-  labs(x = "Observation Date", y = "SPY daily log returns") + 
-  ggtitle("SPY log returns from 1993-01-29 to 2023-06-07")
+autoplot(spy_df$logDiff.Adjusted, ts.colour = "dodgerblue3", main = "SPY log returns from 1993-01-29 to 2023-06-07", 
+         xlab = "Observation Date", ylab = "SPY daily adj. log returns") 
