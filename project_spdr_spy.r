@@ -27,7 +27,7 @@ head(spy_df)
 ggplot(data = spy_df, mapping = aes(x = date, y = SPY.Adjusted)) +
   geom_line() +
   labs(x = "Observation Date", y = "SPY daily log returns") + 
-  ggtitle("S&P 500 log returns from 1993-01-29 to 2023-06-07")
+  ggtitle("SPY log returns from 1993-01-29 to 2023-06-07")
 
 
 
