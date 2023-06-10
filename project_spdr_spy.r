@@ -27,6 +27,6 @@ spy_df = spy_df[-1,]
 
 #show some data
 head(spy_df)
-#plot s&p 500 series
+#plot log s&p 500 series
 autoplot(spy_df$logDiff.Adjusted, ts.colour = "dodgerblue3", main = "SPY log returns from 1993-01-29 to 2023-06-07", 
          xlab = "Observation Date", ylab = "SPY daily adj. log returns") 
