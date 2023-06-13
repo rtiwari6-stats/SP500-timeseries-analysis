@@ -3,6 +3,7 @@ library(quantmod)
 library(ggplot2)
 library(ggfortify)
 library(gridExtra)
+library(grid)
 
 #pull data
 getSymbols("SPY", src = 'yahoo', 
@@ -13,30 +14,44 @@ str(SPY)
 #print some data
 head(SPY)
 
-#plot s&p 500 series
-autoplot(SPY$SPY.Adjusted, ts.colour = "dodgerblue3", main = "SPY data from 1993-01-29 to 2023-06-07",
-         xlab = "Observation Date", ylab = "SPY daily adj. closing price") 
+#create plot function
+plot_all_spy_series = function(my_spy, title="SPY data from 1993-01-29 to 2023-06-07", nRow = 2, date_breaks=waiver(), date_labels=waiver(), angle=0){
+  #plot s&p 500 series adj. closing price column
+  g0 <- autoplot(my_spy$SPY.Adjusted, ts.colour = "dodgerblue3",
+           ylab = "SPY daily adj. closing price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
+    #plot s&P 500 Open, High, Low, and Volume columns
+  
+  g1 <- autoplot(my_spy$SPY.Open, ts.colour = "dodgerblue3",
+                 ylab = "SPY daily opening price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
+  
+  g2 <- autoplot(my_spy$SPY.High, ts.colour = "dodgerblue3", 
+                  ylab = "SPY daily high price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
+  
+  g3 <- autoplot(my_spy$SPY.Low, ts.colour = "dodgerblue3", 
+                  ylab = "SPY daily low price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
+  
+  g4 <- autoplot(my_spy$SPY.Volume, ts.colour = "dodgerblue3",
+                 ylab = "SPY daily share volume") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
+  
+  grid.arrange(g0, g1, g2, g3, g4, nrow = nRow, top=textGrob(title))
+}
 
+#plot all spy columns
+plot_all_spy_series(SPY)
 
-#plot s&P 500 Open, High, Low, and Volume columns
+#Seasonality checks
+#Try with monthly data 
+SPY_monthly = to.monthly(SPY) #convert the OHLC series to monthly
+#plot all monthly series
+plot_all_spy_series(SPY_monthly, title="SPY Monthly data from 1993-01-29 to 2023-06-07", nRow=ncol(SPY_monthly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
 
-g1 <- autoplot(SPY$SPY.Open, ts.colour = "dodgerblue3", main = "SPY data from 1993-01-29 to 2023-06-07",
-         xlab = "Observation Date", ylab = "SPY daily opening price")
+#next try quarterly data
+SPY_quarterly = to.quarterly(SPY) #convert the OHLC series to quarterly
+plot_all_spy_series(SPY_quarterly, title="SPY Quarterly data from 1993-01-29 to 2023-06-07", nRow=ncol(SPY_quarterly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
 
-g2 <- autoplot(SPY$SPY.High, ts.colour = "dodgerblue3", main = "SPY data from 1993-01-29 to 2023-06-07",
-         xlab = "Observation Date", ylab = "SPY daily high price")
-
-g3 <- autoplot(SPY$SPY.Low, ts.colour = "dodgerblue3", main = "SPY data from 1993-01-29 to 2023-06-07",
-         xlab = "Observation Date", ylab = "SPY daily low price")
-
-g4 <- autoplot(SPY$SPY.Volume, ts.colour = "dodgerblue3", main = "SPY data from 1993-01-29 to 2023-06-07",
-         xlab = "Observation Date", ylab = "SPY daily share volume")
-
-grid.arrange(g1, g2, g3, g4, nrow = 2)
 
 #create log returns
 #step 1 convert to a data frame (can be tibble too)
-
 spy_df = data.frame(date=index(SPY), coredata(SPY))
 spy_df$logDiff.Adjusted = diff(log(SPY$SPY.Adjusted))
 #remove first row because first row of the diff is NA
