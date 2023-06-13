@@ -49,6 +49,30 @@ plot_all_spy_series(SPY_monthly, title="SPY Monthly data from 1993-01-29 to 2023
 SPY_quarterly = to.quarterly(SPY) #convert the OHLC series to quarterly
 plot_all_spy_series(SPY_quarterly, title="SPY Quarterly data from 1993-01-29 to 2023-06-07", nRow=ncol(SPY_quarterly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
 
+#Below is the decomposition plot function. I didn't include SPY.Volume because the decompose() function 
+#was returning an error for this. I think it's because decompose() only works with seasonal data
+#and SPY.volume exhibits no seasonality.
+
+decomp_func <- function(dataset, nRow = 2, title = "Decomposition Plots") {
+            
+          
+            p1 <- autoplot(decompose(as.ts(dataset$SPY.Open)), ylab = "SPY.Open")
+            p2 <- autoplot(decompose(as.ts(dataset$SPY.Adjusted)), ylab = "SPY.Adjusted")
+            p3 <- autoplot(decompose(as.ts(dataset$SPY.Low)), ylab = "SPY.Low")
+            p4 <- autoplot(decompose(as.ts(dataset$SPY.High)), ylab = "SPY.High")
+           # p5 <- autoplot(decompose(as.ts(dataset$SPY.Voume)))
+            
+            grid.arrange(p1,p2,p3,p4, nrow = nRow, top=textGrob(title))
+         
+            
+}
+
+# Decomposition plots for monthly data
+decomp_func(SPY_monthly)
+# Decomposition plots for quarterly data
+decomp_func(SPY_quarterly)
+
+
 
 #create log returns
 #step 1 convert to a data frame (can be tibble too)
