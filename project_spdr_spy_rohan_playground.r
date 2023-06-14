@@ -52,18 +52,6 @@ SPY_quarterly = to.quarterly(SPY) #convert the OHLC series to quarterly
 plot_all_spy_series(SPY_quarterly, title="SPY Quarterly data from 1993-01-29 to 2023-06-07", 
                     nRow=ncol(SPY_quarterly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
 
-#we see an obvious increasing trend in the adjusted closing process. We try a trend-only model to SPY
-spy_ts = as.ts(SPY)
-trend = time(spy_ts)
-trend_spy = lm(spy_ts[,"SPY.Adjusted"] ~ trend, na.action = NULL)
-summary(trend_spy)
-plot(trend_spy) #trend model doesn't appear to be valid
-#try boxcox
-trend_spy_bc = lm(BoxCox(spy_ts[,"SPY.Adjusted"], lambda = BoxCox.lambda(spy_ts[,"SPY.Adjusted"]))
-                  ~ trend, na.action = NULL)
-summary(trend_spy_bc)
-plot(trend_spy_bc) #doesn't look good yet, should check for seasonality.
-
 #check for seasonality
 #let us write a decomposed series plotter first
 decomp_func <- function(dataset, nRow = 3, title = "Decomposition Plots for SPY") {
@@ -113,6 +101,49 @@ decomp_func(spy_monthly_ts, title="Decomposition Plots for Monthly SPY")
 #Quarterly
 spy_quarterly_ts = ts(data = coredata(SPY_quarterly), start = c(1993,1), end = c(2023,6), frequency = 4)
 decomp_func(spy_quarterly_ts, title="Decomposition Plots for Quarterly SPY")
+
+
+#we see an obvious increasing trend in the adjusted closing process. We try a trend-only model to SPY
+#diagnostic plots have been commented out to minimize the number of plots generated
+spy_ts = as.ts(SPY)
+trend = time(spy_ts)
+trend_spy = lm(spy_ts[,"SPY.Adjusted"] ~ trend, na.action = NULL)
+summary(trend_spy)
+#plot(trend_spy) #trend model doesn't appear to be valid as per diag plots
+
+#try quadratic trend
+trend_spy_quad = lm(spy_ts[,"SPY.Adjusted"] ~ trend + I(trend ^ 2), na.action = NULL)
+summary(trend_spy_quad)#trend model doesn't appear to be valid
+plot(spy_ts[,"SPY.Adjusted"])
+abline(trend_spy)
+pred = predict(trend_spy_quad)
+ix = base::sort(trend, index.return=T)
+#add polynomial curve to plot
+plot(spy_ts[,"SPY.Adjusted"])
+lines(trend[ix], pred[ix],lwd=2, col="blue")
+
+#try splines
+library(mgcv)
+trend_spy_gam_4 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=10,bs="cr"))
+trend_spy_gam_25 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=25,bs="cr"))
+trend_spy_gam_200 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=200,bs="cr"))
+#trend_spy_gam_2000 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=2000,bs="cr")) too slow!
+gam.check(trend_spy_gam_4)
+gam.check(trend_spy_gam_25)
+gam.check(trend_spy_gam_200)
+#gam.check(trend_spy_gam_2000)
+ord <- order(trend)
+plot(spy_ts[,"SPY.Adjusted"])
+lines(trend[ord], fitted(trend_spy_gam_4)[ord], lwd=3, col="red")
+lines(trend[ord], fitted(trend_spy_gam_25)[ord], lwd=3, col="blue")
+lines(trend[ord], fitted(trend_spy_gam_200)[ord], lwd=3, col="green") # still not sufficient, we need need a large number of splines to capture the fluctuations in the trend!
+#lines(trend[ord], fitted(trend_spy_gam_2000)[ord], lwd=3, col="yellow")
+
+#try boxcox
+trend_spy_bc = lm(BoxCox(spy_ts[,"SPY.Adjusted"], lambda = BoxCox.lambda(spy_ts[,"SPY.Adjusted"]))
+                  ~ trend, na.action = NULL)
+summary(trend_spy_bc)
+#plot(trend_spy_bc) #doesn't look good
 
 
 #create log returns
