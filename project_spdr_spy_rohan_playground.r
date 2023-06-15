@@ -194,8 +194,20 @@ stl(na.omit(SPY$logDiff.Adjusted)) # doesn't work, so not seasonal
 #autocorrelation
 acf(SPY$logDiff.Adjusted, na.action = na.pass, main="DiifLog SPY returns 1993-01-29 to 2023-06-07") #almost white noise except perhaps at lag 1?
 pacf(SPY$logDiff.Adjusted, na.action = na.pass, main="DiifLog SPY returns 1993-01-29 to 2023-06-07") # some significant values and a tail-off?
-auto.arima(SPY$logDiff.Adjusted) #ARIMA(1,0,4) with non-zero mean
 
 
+#split into train and test
+train_date <- nrow(SPY) *0.8 #80% train
+spy_train = SPY[1:train_date,]
+spy_test <- SPY[-c(1:train_date),] #20% test
+tail(spy_train) # ends at 2017-05-09
+head(spy_test) # starts at 2017-05-10 - so the split works
 
+#arima for daily returns
+spy.arima = auto.arima(na.omit(spy_train$logDiff.Adjusted)) 
+summary(spy.arima) #ARIMA(1,0,1) with non-zero mean 
+spy.forecast = forecast(spy.arima, h=length(spy_test))
+accuracy(spy.forecast, spy_test$logDiff.Adjusted) #RMSE on test is 0.01269035
+autoplot(spy.forecast, ylab="Log Diff Adjusted Price", 
+         main="SPY Log Diff Adjusted Price forecasts 2017-05-09 onwards")
 
