@@ -6,6 +6,7 @@ library(gridExtra)
 library(grid)
 library(forecast)
 library(tseries)
+library(seastests)
 #pull data
 getSymbols("SPY", src = 'yahoo', 
            from = "1993-01-29", to = "2023-06-07") # Note this can be current date too
@@ -94,6 +95,8 @@ decomp_func <- function(dataset, nRow = 3, title = "Decomposition Plots for SPY"
 }
 
 #start and end are hard coded!!
+#daily - decompose, stl do not work so not seasonality for any column.
+
 #monthly
 spy_monthly_ts = ts(data = coredata(SPY_monthly), start = c(1993,1), end = c(2023,6), frequency = 12)
 decomp_func(spy_monthly_ts, title="Decomposition Plots for Monthly SPY")
@@ -166,7 +169,7 @@ plot(spy_adjusted_bc)
 par(mar=c(5,4,4,1))
 par(mfrow=c(1,1))
 
-#create log returns
+#create log returns on adjusted price
 #step 1 convert to a data frame (can be tibble too)
 #this is daily series, so we have daily returns
 SPY$logDiff.Adjusted = diff(log(SPY$SPY.Adjusted))
@@ -176,15 +179,23 @@ autoplot(SPY$logDiff.Adjusted, ts.colour = "dodgerblue3", main = "SPY log return
          xlab = "Observation Date", ylab = "SPY daily adj. log returns") 
 
 #let's try adf test on logged and original
-adf.test(spy_df$logDiff.Adjusted) # null hypothesis rejected. STATIONARY!
-adf.test(spy_df$SPY.Adjusted) # not stationary 
+adf.test(na.omit(SPY$logDiff.Adjusted)) # null hypothesis rejected. STATIONARY!
+adf.test(na.omit(SPY$SPY.Adjusted)) # not stationary 
 
-#autocorrelation
-acf(SPY$logDiff.Adjusted, na.action = na.pass, main="DiifLog SPY returns 1993-01-29 to 2023-06-07") #almost white noise?
-
-#try some lag plots on the series
+#try some lag plots on the logdiff series
 # a month of lags
 # no pattern observed
 lag.plot(na.omit(SPY$logDiff.Adjusted), lags=30)
+
+#seasonality test
+isSeasonal(SPY$logDiff.Adjusted, freq = 365) # returns False!
+stl(na.omit(SPY$logDiff.Adjusted)) # doesn't work, so not seasonal
+
+#autocorrelation
+acf(SPY$logDiff.Adjusted, na.action = na.pass, main="DiifLog SPY returns 1993-01-29 to 2023-06-07") #almost white noise except perhaps at lag 1?
+pacf(SPY$logDiff.Adjusted, na.action = na.pass, main="DiifLog SPY returns 1993-01-29 to 2023-06-07") # some significant values and a tail-off?
+auto.arima(SPY$logDiff.Adjusted) #ARIMA(1,0,4) with non-zero mean
+
+
 
 
