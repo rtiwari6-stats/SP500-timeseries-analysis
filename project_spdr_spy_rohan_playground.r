@@ -5,7 +5,7 @@ library(ggfortify)
 library(gridExtra)
 library(grid)
 library(forecast)
-library(caret)
+library(tseries)
 #pull data
 getSymbols("SPY", src = 'yahoo', 
            from = "1993-01-29", to = "2023-06-07") # Note this can be current date too
@@ -107,54 +107,84 @@ decomp_func(spy_quarterly_ts, title="Decomposition Plots for Quarterly SPY")
 #diagnostic plots have been commented out to minimize the number of plots generated
 spy_ts = as.ts(SPY)
 trend = time(spy_ts)
-trend_spy = lm(spy_ts[,"SPY.Adjusted"] ~ trend, na.action = NULL)
-summary(trend_spy)
-#plot(trend_spy) #trend model doesn't appear to be valid as per diag plots
+plot_trend = function(ts, line){
+  plot(spy_ts[,ts], main = paste("Linear trend for", ts))
+  abline(line)
+}
 
-#try quadratic trend
-trend_spy_quad = lm(spy_ts[,"SPY.Adjusted"] ~ trend + I(trend ^ 2), na.action = NULL)
-summary(trend_spy_quad)#trend model doesn't appear to be valid
-plot(spy_ts[,"SPY.Adjusted"])
-abline(trend_spy)
-pred = predict(trend_spy_quad)
-ix = base::sort(trend, index.return=T)
-#add polynomial curve to plot
-plot(spy_ts[,"SPY.Adjusted"])
-lines(trend[ix], pred[ix],lwd=2, col="blue")
+par(mar=c(1.5,1.5,1.5,1.5))
+par(mfrow=c(3,2))
+#TODO: axis naming and scales
+for(i in 1:ncol(spy_ts)){
+  m = lm(spy_ts[,i] ~ trend, na.action = NULL)
+  plot_trend(colnames(spy_ts)[i], m)
+}
 
-#try splines
+#try quadratic trend for adjusted price
+plot_quad_trend = function(ts, curve){
+  pred = predict(curve)
+  ix = base::sort(trend, index.return=T)
+  plot(spy_ts[,ts], main = paste("Quad Linear trend for", ts))
+  lines(trend[ix], pred[ix],lwd=2, col="blue")
+}
+par(mar=c(1.5,1.5,1.5,1.5))
+par(mfrow=c(3,2))
+#TODO: axis naming and scales
+for(i in 1:ncol(spy_ts)){
+  m = lm(spy_ts[,i] ~ trend + I(trend ^ 2), na.action = NULL)
+  plot_quad_trend(colnames(spy_ts)[i], m)
+}
+
+#try splines for adjusted price
+spline_trend=function(ts, gam1, gam2, gam3){
+  ord <- order(trend)
+  plot(spy_ts[,ts], main = paste("Non Linear trend for", ts))
+  lines(trend[ord], fitted(gam1)[ord], lwd=3, col="red")
+  lines(trend[ord], fitted(gam2)[ord], lwd=3, col="blue")
+  lines(trend[ord], fitted(gam3)[ord], lwd=3, col="green")
+}
+
 library(mgcv)
-trend_spy_gam_4 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=10,bs="cr"))
-trend_spy_gam_25 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=25,bs="cr"))
-trend_spy_gam_200 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=200,bs="cr"))
-#trend_spy_gam_2000 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=2000,bs="cr")) too slow!
-gam.check(trend_spy_gam_4)
-gam.check(trend_spy_gam_25)
-gam.check(trend_spy_gam_200)
-#gam.check(trend_spy_gam_2000)
-ord <- order(trend)
-plot(spy_ts[,"SPY.Adjusted"])
-lines(trend[ord], fitted(trend_spy_gam_4)[ord], lwd=3, col="red")
-lines(trend[ord], fitted(trend_spy_gam_25)[ord], lwd=3, col="blue")
-lines(trend[ord], fitted(trend_spy_gam_200)[ord], lwd=3, col="green") # still not sufficient, we need need a large number of splines to capture the fluctuations in the trend!
-#lines(trend[ord], fitted(trend_spy_gam_2000)[ord], lwd=3, col="yellow")
+par(mar=c(1.5,1.5,1.5,1.5))
+par(mfrow=c(3,2))
+#TODO: axis naming and scales
+for(i in 1:ncol(spy_ts)){
+  gam_4 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=10,bs="cr"))
+  gam_25 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=25,bs="cr"))
+  gam_200 = mgcv::gam(spy_ts[,"SPY.Adjusted"]~s(trend, k=200,bs="cr"))
+  spline_trend(colnames(spy_ts)[i], gam_4, gam_25, gam_200)
+}# still not sufficient, we need need a large number of splines to capture the fluctuations in the trend!
 
 #try boxcox
-trend_spy_bc = lm(BoxCox(spy_ts[,"SPY.Adjusted"], lambda = BoxCox.lambda(spy_ts[,"SPY.Adjusted"]))
+spy_adjusted_bc = BoxCox(spy_ts[,"SPY.Adjusted"], lambda = BoxCox.lambda(spy_ts[,"SPY.Adjusted"]))
+trend_spy_bc = lm(spy_adjusted_bc
                   ~ trend, na.action = NULL)
 summary(trend_spy_bc)
 #plot(trend_spy_bc) #doesn't look good
+plot(spy_adjusted_bc)
 
+par(mar=c(5,4,4,1))
+par(mfrow=c(1,1))
 
 #create log returns
 #step 1 convert to a data frame (can be tibble too)
-spy_df = data.frame(date=index(SPY), coredata(SPY))
-spy_df$logDiff.Adjusted = diff(log(SPY$SPY.Adjusted))d
-#remove first row because first row of the diff is NA
-spy_df = spy_df[-1,]
+#this is daily series, so we have daily returns
+SPY$logDiff.Adjusted = diff(log(SPY$SPY.Adjusted))
 
-#show some data
-head(spy_df)
 #plot log s&p 500 series
-autoplot(spy_df$logDiff.Adjusted, ts.colour = "dodgerblue3", main = "SPY log returns from 1993-01-29 to 2023-06-07", 
+autoplot(SPY$logDiff.Adjusted, ts.colour = "dodgerblue3", main = "SPY log returns from 1993-01-29 to 2023-06-07", 
          xlab = "Observation Date", ylab = "SPY daily adj. log returns") 
+
+#let's try adf test on logged and original
+adf.test(spy_df$logDiff.Adjusted) # null hypothesis rejected. STATIONARY!
+adf.test(spy_df$SPY.Adjusted) # not stationary 
+
+#autocorrelation
+acf(SPY$logDiff.Adjusted, na.action = na.pass, main="DiifLog SPY returns 1993-01-29 to 2023-06-07") #almost white noise?
+
+#try some lag plots on the series
+# a month of lags
+# no pattern observed
+lag.plot(na.omit(SPY$logDiff.Adjusted), lags=30)
+
+
