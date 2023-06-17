@@ -4,7 +4,11 @@ library(ggplot2)
 library(ggfortify)
 library(gridExtra)
 library(grid)
-
+library(forecast)
+library(tseries)
+library(seastests)
+library(TSstudio)
+library(astsa)
 #pull data
 getSymbols("SPY", src = 'yahoo', 
            from = "1993-01-29", to = "2023-06-07") # Note this can be current date too
@@ -14,21 +18,36 @@ str(SPY)
 #print some data
 head(SPY)
 
-#create plot function
+#Using getSymbols for fred data too to get XTS types
+getSymbols.FRED("UNRATE", from = "1993-01-29", to = "2023-06-07", env=globalenv()) #unemployment rate 
+#NOTE: Data is till 2023-05-01 only
+head(UNRATE)
+#plot
+autoplot(UNRATE,ts.colour = "dodgerblue3", ylab = "Unemployment Rate", main="Unemployment Rate from 1993-01 to 2023-05")
+
+getSymbols.FRED("CPALTT01USM657N", from = "1993-01-29", to = "2023-06-07", env=globalenv()) #CPI or inflation
+CPI = CPALTT01USM657N
+names(CPI) = c("CPI") 
+#NOTE: Only available till 2023-03-01
+head(CPI)
+#plot
+autoplot(CPI,ts.colour = "dodgerblue3", ylab = "Consumer Price Index", main="Consumer Price Index from 1993-01 to 2023-03")
+
+#create plot function for S&P 500
 plot_all_spy_series = function(my_spy, title="SPY data from 1993-01-29 to 2023-06-07", nRow = 2, date_breaks=waiver(), date_labels=waiver(), angle=0){
   #plot s&p 500 series adj. closing price column
   g0 <- autoplot(my_spy$SPY.Adjusted, ts.colour = "dodgerblue3",
-           ylab = "SPY daily adj. closing price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
-    #plot s&P 500 Open, High, Low, and Volume columns
+                 ylab = "SPY daily adj. closing price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
+  #plot s&P 500 Open, High, Low, and Volume columns
   
   g1 <- autoplot(my_spy$SPY.Open, ts.colour = "dodgerblue3",
                  ylab = "SPY daily opening price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
   
   g2 <- autoplot(my_spy$SPY.High, ts.colour = "dodgerblue3", 
-                  ylab = "SPY daily high price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
+                 ylab = "SPY daily high price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
   
   g3 <- autoplot(my_spy$SPY.Low, ts.colour = "dodgerblue3", 
-                  ylab = "SPY daily low price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
+                 ylab = "SPY daily low price") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
   
   g4 <- autoplot(my_spy$SPY.Volume, ts.colour = "dodgerblue3",
                  ylab = "SPY daily share volume") + scale_x_date(date_breaks = date_breaks, date_labels = date_labels) +  theme(axis.text.x = element_text(angle = angle))
@@ -43,46 +62,89 @@ plot_all_spy_series(SPY)
 #Try with monthly data 
 SPY_monthly = to.monthly(SPY) #convert the OHLC series to monthly
 #plot all monthly series
-plot_all_spy_series(SPY_monthly, title="SPY Monthly data from 1993-01-29 to 2023-06-07", nRow=ncol(SPY_monthly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
+plot_all_spy_series(SPY_monthly, title="SPY Monthly data from 1993-01-29 to 2023-06-07", 
+                    nRow=ncol(SPY_monthly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
 
 #next try quarterly data
 SPY_quarterly = to.quarterly(SPY) #convert the OHLC series to quarterly
-plot_all_spy_series(SPY_quarterly, title="SPY Quarterly data from 1993-01-29 to 2023-06-07", nRow=ncol(SPY_quarterly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
+plot_all_spy_series(SPY_quarterly, title="SPY Quarterly data from 1993-01-29 to 2023-06-07", 
+                    nRow=ncol(SPY_quarterly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
 
-#Below is the decomposition plot function. I didn't include SPY.Volume because the decompose() function 
-#was returning an error for this. I think it's because decompose() only works with seasonal data
-#and SPY.volume exhibits no seasonality.
-
-decomp_func <- function(dataset, nRow = 2, title = "Decomposition Plots") {
-            
-          
-            p1 <- autoplot(decompose(as.ts(dataset$SPY.Open)), ylab = "SPY.Open")
-            p2 <- autoplot(decompose(as.ts(dataset$SPY.Adjusted)), ylab = "SPY.Adjusted")
-            p3 <- autoplot(decompose(as.ts(dataset$SPY.Low)), ylab = "SPY.Low")
-            p4 <- autoplot(decompose(as.ts(dataset$SPY.High)), ylab = "SPY.High")
-           # p5 <- autoplot(decompose(as.ts(dataset$SPY.Voume)))
-            
-            grid.arrange(p1,p2,p3,p4, nrow = nRow, top=textGrob(title))
-         
-            
+#check for seasonality using decomposition
+#let us write a decomposed series plotter first
+decomp_func <- function(dataset, nRow = 3, title = "Decomposition Plots for SPY") {
+  
+  open_dc = decompose(spy_monthly_ts[,"SPY.Open"])
+  high_dc = decompose(spy_monthly_ts[,"SPY.High"])
+  low_dc = decompose(spy_monthly_ts[,"SPY.Low"])
+  close_dc = decompose(spy_monthly_ts[,"SPY.Close"])
+  volume_dc = decompose(spy_monthly_ts[,"SPY.Volume"])                     
+  Adjusted_dc = decompose(spy_monthly_ts[,"SPY.Adjusted"])
+  
+  #can write another function for this                
+  open_dc_xts = merge.xts(as.xts(open_dc$seasonal), as.xts(open_dc$x), as.xts(open_dc$trend), as.xts(open_dc$random))
+  names(open_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
+  
+  high_dc_xts = merge.xts(as.xts(high_dc$seasonal), as.xts(high_dc$x), as.xts(high_dc$trend), as.xts(high_dc$random))
+  names(high_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
+  
+  low_dc_xts = merge.xts(as.xts(low_dc$seasonal), as.xts(low_dc$x), as.xts(low_dc$trend), as.xts(low_dc$random))
+  names(low_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
+  
+  close_dc_xts = merge.xts(as.xts(close_dc$seasonal), as.xts(close_dc$x), as.xts(close_dc$trend), as.xts(close_dc$random))
+  names(close_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
+  
+  volume_dc_xts = merge.xts(as.xts(volume_dc$seasonal), as.xts(volume_dc$x), as.xts(volume_dc$trend), as.xts(volume_dc$random))
+  names(volume_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
+  
+  adjusted_dc_xts = merge.xts(as.xts(Adjusted_dc$seasonal), as.xts(Adjusted_dc$x), as.xts(Adjusted_dc$trend), as.xts(Adjusted_dc$random))
+  names(adjusted_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
+  
+  p1 <- autoplot(open_dc_xts, ylab = "SPY.Open", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
+  p2 <- autoplot(high_dc_xts, ylab = "SPY.High", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
+  p3 <- autoplot(low_dc_xts, ylab = "SPY.Low", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
+  p4 <- autoplot(close_dc_xts, ylab = "SPY.Close", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
+  p5 <- autoplot(volume_dc_xts, ylab = "SPY.Volume", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
+  p6 <- autoplot(adjusted_dc_xts, ylab = "SPY.Adjusted", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
+  
+  grid.arrange(p1,p2,p3,p4,p5,p6, nrow = nRow, top=textGrob(title))
+  
 }
 
-# Decomposition plots for monthly data
-decomp_func(SPY_monthly)
-# Decomposition plots for quarterly data
-decomp_func(SPY_quarterly)
+#start and end are hard coded!!
+#daily - decompose, stl do not work so not seasonality for any column.
 
+#monthly
+spy_monthly_ts = ts(data = coredata(SPY_monthly), start = c(1993,1), end = c(2023,6), frequency = 12)
+decomp_func(spy_monthly_ts, title="Decomposition Plots for Monthly SPY")
 
+#Quarterly
+spy_quarterly_ts = ts(data = coredata(SPY_quarterly), start = c(1993,1), end = c(2023,6), frequency = 4)
+decomp_func(spy_quarterly_ts, title="Decomposition Plots for Quarterly SPY")
 
-#create log returns
+#create log returns on adjusted price (monthly)
+#note that this is a random walk because we take the difference x(t) - x(t-1) as the first step to compute the returns
+# whatever is left is supposed to be random error.
 #step 1 convert to a data frame (can be tibble too)
-spy_df = data.frame(date=index(SPY), coredata(SPY))
-spy_df$logDiff.Adjusted = diff(log(SPY$SPY.Adjusted))
-#remove first row because first row of the diff is NA
-spy_df = spy_df[-1,]
+#this is daily series, so we have daily returns
+SPY_monthly$logDiff.Adjusted = diff(log(SPY_monthly$SPY.Adjusted))
 
-#show some data
-head(spy_df)
 #plot log s&p 500 series
-autoplot(spy_df$logDiff.Adjusted, ts.colour = "dodgerblue3", main = "SPY log returns from 1993-01-29 to 2023-06-07", 
+autoplot(SPY_monthly$logDiff.Adjusted, ts.colour = "dodgerblue3", main = "SPY monthly log returns from 1993-01-29 to 2023-06-07", 
          xlab = "Observation Date", ylab = "SPY daily adj. log returns") 
+
+#let's try adf test on logged and original for SPY
+adf.test(na.omit(SPY_monthly$logDiff.Adjusted)) # null hypothesis rejected. STATIONARY! at 0.05
+adf.test(na.omit(SPY_monthly$SPY.Adjusted)) # not stationary  at 0.05
+
+#adf tests for CPI and UNRate
+adf.test(UNRATE$UNRATE) #stationary at 0.05
+adf.test(CPI$CPI) #stationary at 0.05
+
+#seasonality test for SPY monthly
+isSeasonal(SPY_monthly$logDiff.Adjusted, freq = 12) # returns False!
+isSeasonal(SPY_monthly$SPY.Adjusted, freq = 12) # returns False!
+
+#seasonality test for CPI and Unrate
+isSeasonal(UNRATE$UNRATE, freq = 12) #FALSE
+isSeasonal(CPI$CPI, freq = 12) #TRUE
