@@ -148,3 +148,10 @@ isSeasonal(SPY_monthly$SPY.Adjusted, freq = 12) # returns False!
 #seasonality test for CPI and Unrate
 isSeasonal(UNRATE$UNRATE, freq = 12) #FALSE
 isSeasonal(CPI$CPI, freq = 12) #TRUE
+
+#decomposing CPI and UNRATE
+CPI_ts = ts(data = coredata(CPI), start = c(1993,1), end = c(2023,5), frequency = 12)
+autoplot(decompose(CPI_ts), main="Decomposing CPI monthly series") #clear seasonality
+
+UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,3), frequency = 12)
+autoplot(decompose(UNRATE_ts), main="Decomposing UNRATE monthly series") #clear seasonality
