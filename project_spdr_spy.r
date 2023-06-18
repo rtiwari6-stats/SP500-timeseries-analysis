@@ -155,3 +155,90 @@ autoplot(decompose(CPI_ts), main="Decomposing CPI monthly series") #clear season
 
 UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,3), frequency = 12)
 autoplot(decompose(UNRATE_ts), main="Decomposing UNRATE monthly series") #clear seasonality
+
+#focussing on UNRATE
+#check acf
+acf(UNRATE$UNRATE) #doesn't decay much
+
+#1st difference
+UNRATE_diff1 = na.omit(diff(UNRATE$UNRATE))
+acf(UNRATE_diff1) #WOW looks great!!
+UNRATE_diff1_ts = ts(data = coredata(UNRATE_diff1), start = c(1993,1), end = c(2023,3), frequency = 12)
+autoplot(UNRATE_diff1_ts, main="1st difference UNRATE monthly series", ylab="diff(UNRATE)")
+autoplot(decompose(UNRATE_diff1_ts), main="Decomposing first difference UNRATE monthly series") #clear seasonality
+
+#6th difference (seasonality is 6?)
+UNRATE_diff6 = na.omit(diff(UNRATE$UNRATE, lag=6))
+acf(UNRATE_diff6) # we have larger acfs
+UNRATE_diff6_ts = ts(data = coredata(UNRATE_diff6), start = c(1993,1), end = c(2023,3), frequency = 12)
+autoplot(UNRATE_diff6_ts, main="seasonal difference UNRATE monthly series", ylab="diff(UNRATE,lag=6)")
+autoplot(decompose(UNRATE_diff6_ts), main="Decomposing 6th difference UNRATE monthly series") #clear seasonality
+
+#1st difference of the seasonal difference
+UNRATE_1diff6 = na.omit(diff(UNRATE_diff6$UNRATE))
+acf(UNRATE_1diff6) # we have now have better acfs (lag 6 is most correlated)
+UNRATE_1diff6_ts = ts(data = coredata(UNRATE_1diff6), start = c(1993,1), end = c(2023,3), frequency = 12)
+autoplot(UNRATE_1diff6_ts, main="1st differencee of seasonal difference UNRATE monthly series", ylab="diff(diff(UNRATE,lag=6))")
+autoplot(decompose(UNRATE_1diff6_ts), main="Decomposing 1st difference of seasonal difference UNRATE monthly series") #clear seasonality though seems better
+
+#lets just try to difference the seasonal trend
+UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,3), frequency = 12)
+UNRATE_seasdiff = UNRATE_ts-decompose(UNRATE_ts)$seasonal
+autoplot(decompose(UNRATE_seasdiff), main="Decomposing seasonal difference (from decompose fit) UNRATE monthly series") #looks good
+acf(UNRATE_seasdiff) # doesn't look good yet
+autoplot(UNRATE_seasdiff, main="seasonal difference(from decompose fit) UNRATE monthly series", ylab="diff(diff(UNRATE,lag=6))")
+
+#first difference of the seasonal trend
+UNRATE_seasdiff1 = diff(UNRATE_seasdiff)
+acf(UNRATE_seasdiff1)
+autoplot(decompose(UNRATE_seasdiff1), 
+         main="Decomposing first difference of seasonal difference (from decompose fit) UNRATE monthly series") #looks good
+autoplot(UNRATE_seasdiff1, 
+         main="first difference of seasonal difference(from decompose fit) UNRATE monthly series", 
+         ylab="diff(diff(UNRATE,lag=6))") # looks reasonable but has variance problem
+
+#do the same but this time with log UNRATE to stabilize variance
+UNRATE_log_ts = log(UNRATE_ts)
+UNRATE_log_seasdiff = UNRATE_log_ts-decompose(UNRATE_log_ts)$seasonal
+UNRATE_log_seasdiff1 = diff(UNRATE_log_seasdiff) 
+autoplot(decompose(UNRATE_log_seasdiff1), 
+         main="Decomposing first difference of seasonal difference (from decompose fit) log UNRATE monthly series") #looks good
+autoplot(UNRATE_log_seasdiff1, 
+         main="first difference of seasonal difference(from decompose fit) log UNRATE monthly series", 
+         ylab="diff(diff(UNRATE,lag=6))") # looks reasonable but has some variance problem
+acf(UNRATE_log_seasdiff1)
+
+
+
+# #focussing on CPI
+# #12th difference (seasonality is 12?)
+# CPI_diff12 = na.omit(diff(CPI$CPI, lag=12))
+# acf(CPI_diff12) # looks pretty good!
+# CPI_diff12_ts = ts(data = coredata(CPI_diff12), start = c(1993,1), end = c(2023,5), frequency = 12)
+# autoplot(CPI_diff12_ts, main="seasonal difference CPI monthly series", ylab="diff(UNRATE,lag=12)") #reasonable
+# autoplot(decompose(CPI_diff12_ts), main="Decomposing 12th difference CPI monthly series") #some seasonality
+# 
+# #1st difference of the seasonal difference
+# CPI_1diff12 = na.omit(diff(CPI_diff12$CPI))
+# acf(CPI_1diff12) # still looks pretty good
+# CPI_1diff12_ts = ts(data = coredata(CPI_1diff12), start = c(1993,1), end = c(2023,3), frequency = 12)
+# autoplot(CPI_1diff12_ts, main="1st differencee of seasonal difference CPI monthly series", ylab="diff(diff(UNRATE,lag=12))") # more or less stationary
+# autoplot(decompose(CPI_1diff12_ts), 
+#          main="Decomposing 1st difference of 12th difference UNRATE monthly series") #some seasonality still present
+# 
+# #lets just try to difference the seasonal trend
+# UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,3), frequency = 12)
+# UNRATE_seasdiff = UNRATE_ts-decompose(UNRATE_ts)$seasonal
+# autoplot(decompose(UNRATE_seasdiff), main="Decomposing seasonal difference (from decompose fit) UNRATE monthly series") #looks good
+# acf(UNRATE_seasdiff) # doesn't look good yet
+# autoplot(UNRATE_seasdiff, main="seasonal difference(from decompose fit) UNRATE monthly series", ylab="diff(diff(UNRATE,lag=6))")
+# 
+# #first difference of the seasonal trend
+# UNRATE_seasdiff1 = diff(UNRATE_seasdiff)
+# acf(UNRATE_seasdiff1)
+# autoplot(decompose(UNRATE_seasdiff1), 
+#          main="Decomposing first difference of seasonal difference (from decompose fit) UNRATE monthly series") #looks good
+# autoplot(UNRATE_seasdiff1, 
+#          main="first difference of seasonal difference(from decompose fit) UNRATE monthly series", 
+#          ylab="diff(diff(UNRATE,lag=6))") # looks reasonable
+# 
