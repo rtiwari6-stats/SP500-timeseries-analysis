@@ -177,9 +177,10 @@ isSeasonal(UNRATE_stationary) #UNRATE_stationary is the stationary UNRATE
 CPI_ts = ts(data = coredata(CPI), start = c(1993,1), end = c(2023,3), frequency = 12)
 CPI_decomp = decompose(CPI_ts)
 CPI_stationary = na.omit(CPI_ts - CPI_decomp$seasonal - CPI_decomp$trend) #detrend, deseasonalized
-acf(CPI_stationary) #acf shows some larger values and doesn't decay quickly so we take 1st diff
-CPI_stationary = diff(CPI_stationary)
-acf(CPI_stationary) #looks better
+acf(CPI_stationary) #acf shows some larger values and doesn't decay quickly so we can take 1st diff
+#First diff doesn't change the result much except makes the ACF look better
+#CPI_stationary = diff(CPI_stationary)
+#acf(CPI_stationary) #looks better
 autoplot(CPI_stationary, 
          main="seasonal & trend difference (from decompose fit) CPI monthly series", 
          ylab="CPI_ts - CPI_decomp$seasonal - CPI_decomp$trend") # looks good to me!
