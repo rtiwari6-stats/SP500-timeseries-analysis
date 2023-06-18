@@ -161,16 +161,27 @@ autoplot(decompose(UNRATE_ts), main="Decomposing UNRATE monthly series") #clear 
 acf(UNRATE$UNRATE) #doesn't decay much
 
 #let's just use decompose
-UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,3), frequency = 12) #copying this over
+UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,5), frequency = 12) #copying this over
 UNRATE_decomp = decompose(UNRATE_ts)
-UNRATE_stationary = na.omit(UNRATE_ts - UNRATE_decomp$seasonal - UNRATE_decomp$trend) #detrend, deseasonalized
+UNRATE_stationary = na.omit(UNRATE_ts - UNRATE_decomp$trend) #detrend
 acf(UNRATE_stationary) #acf shows some larger values and doesn't decay quickly so we take 1st diff
-UNRATE_stationary = diff(UNRATE_stationary)
+UNRATE_stationary = diff(UNRATE_stationary, lag=12) # take a seasonal difference
 acf(UNRATE_stationary) #looks better
 autoplot(UNRATE_stationary, 
         main="first difference of seasonal & trend difference(from decompose fit) UNRATE monthly series", 
         ylab="diff(diff(UNRATE_ts - UNRATE_decomp$seasonal - UNRATE_decomp$trend)") # looks good to me!
-adf.test(UNRATE_stationary)
+adf.test(UNRATE_stationary) # stationary
 isSeasonal(UNRATE_stationary) #UNRATE_stationary is the stationary UNRATE
 
 #Focussing on CPI
+CPI_ts = ts(data = coredata(CPI), start = c(1993,1), end = c(2023,3), frequency = 12)
+CPI_decomp = decompose(CPI_ts)
+CPI_stationary = na.omit(CPI_ts - CPI_decomp$seasonal - CPI_decomp$trend) #detrend, deseasonalized
+acf(CPI_stationary) #acf shows some larger values and doesn't decay quickly so we take 1st diff
+CPI_stationary = diff(CPI_stationary)
+acf(CPI_stationary) #looks better
+autoplot(CPI_stationary, 
+         main="seasonal & trend difference (from decompose fit) CPI monthly series", 
+         ylab="CPI_ts - CPI_decomp$seasonal - CPI_decomp$trend") # looks good to me!
+isSeasonal(CPI_stationary) # returns False!
+adf.test(CPI_stationary) #CPI_stationary is the stationary UNRATE
