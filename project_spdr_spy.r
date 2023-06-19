@@ -186,3 +186,20 @@ autoplot(CPI_stationary,
          ylab="CPI_ts - CPI_decomp$seasonal - CPI_decomp$trend") # looks good to me!
 isSeasonal(CPI_stationary) # returns False!
 adf.test(CPI_stationary) #CPI_stationary is the stationary UNRATE
+
+#CCF of S&P500 and UNRATE
+ccf(as.numeric(SPY_monthly$SPY.Adjusted), as.numeric(UNRATE_stationary), main="SPY Adjusted Closing vs Unemployment Rate")
+
+#CCF of S&P500 and CPI
+ccf(as.numeric(SPY_monthly$SPY.Adjusted), as.numeric(CPI_stationary), main="SPY Adjusted Closing vs CPI")
+
+#Correlation Matrix
+panel.cor <- function(x,y,...){
+  usr <- par("usr"); on.exit(par(usr))
+  par(usr=c(0,1,0,1))
+  r <- round(cor(x,y), 2)
+  text(0.5, 0.5, r, cex=1.75)
+}
+pairs(cbind(SPY_Adjusted_Closing = as.numeric(SPY_monthly$SPY.Adjusted), CPI=as.numeric(CPI_stationary),
+            Unemployment_Rate = as.numeric(UNRATE_stationary), Volume= as.numeric(SPY_monthly$SPY.Volume)),
+      col="dodgerblue3", lower.panel = panel.cor)
