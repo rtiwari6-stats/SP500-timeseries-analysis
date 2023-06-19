@@ -168,8 +168,8 @@ acf(UNRATE_stationary) #acf shows some larger values and doesn't decay quickly s
 UNRATE_stationary = diff(UNRATE_stationary, lag=12) # take a seasonal difference
 acf(UNRATE_stationary) #looks better
 autoplot(UNRATE_stationary, 
-        main="first difference of seasonal & trend difference(from decompose fit) UNRATE monthly series", 
-        ylab="diff(diff(UNRATE_ts - UNRATE_decomp$seasonal - UNRATE_decomp$trend)") # looks good to me!
+         main="first difference of seasonal & trend difference(from decompose fit) UNRATE monthly series", 
+         ylab="diff(diff(UNRATE_ts - UNRATE_decomp$seasonal - UNRATE_decomp$trend)") # looks good to me!
 adf.test(UNRATE_stationary) # stationary
 isSeasonal(UNRATE_stationary) #UNRATE_stationary is the stationary UNRATE
 
@@ -187,11 +187,21 @@ autoplot(CPI_stationary,
 isSeasonal(CPI_stationary) # returns False!
 adf.test(CPI_stationary) #CPI_stationary is the stationary UNRATE
 
+#let's drop SPY.Adjusted column because we won't use it.
+SPY_monthly = na.omit(SPY_monthly[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "logDiff.Adjusted")])
+
+#build our dataset
+project_data = na.omit(merge.xts(SPY_monthly, CPI_stationary, UNRATE_stationary))
+head(project_data)
+tail(project_data)
+
 #CCF of S&P500 and UNRATE
-ccf(as.numeric(SPY_monthly$SPY.Adjusted), as.numeric(UNRATE_stationary), main="SPY Adjusted Closing vs Unemployment Rate")
+ccf(as.numeric(project_data$logDiff.Adjusted), as.numeric(project_data$UNRATE_stationary), 
+    main="SPY logdiff Adjusted Closing vs Unemployment Rate")
 
 #CCF of S&P500 and CPI
-ccf(as.numeric(SPY_monthly$SPY.Adjusted), as.numeric(CPI_stationary), main="SPY Adjusted Closing vs CPI")
+ccf(as.numeric(project_data$logDiff.Adjusted), as.numeric(project_data$CPI_stationary), 
+    main="SPY logdiff Adjusted Closing vs CPI")
 
 #Correlation Matrix
 panel.cor <- function(x,y,...){
@@ -200,6 +210,6 @@ panel.cor <- function(x,y,...){
   r <- round(cor(x,y), 2)
   text(0.5, 0.5, r, cex=1.75)
 }
-pairs(cbind(SPY_Adjusted_Closing = as.numeric(SPY_monthly$SPY.Adjusted), CPI=as.numeric(CPI_stationary),
-            Unemployment_Rate = as.numeric(UNRATE_stationary), Volume= as.numeric(SPY_monthly$SPY.Volume)),
+pairs(cbind(SPY_logdiff_Adjusted_Closing = as.numeric(project_data$logDiff.Adjusted), CPI=as.numeric(project_data$CPI_stationary),
+            Unemployment_Rate = as.numeric(project_data$UNRATE_stationary), Volume= as.numeric(project_data$SPY.Volume)),
       col="dodgerblue3", lower.panel = panel.cor)
