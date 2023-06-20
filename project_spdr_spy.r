@@ -127,22 +127,22 @@ decomp_func(spy_quarterly_ts, title="Decomposition Plots for Quarterly SPY")
 # whatever is left is supposed to be random error.
 #step 1 convert to a data frame (can be tibble too)
 #this is daily series, so we have daily returns
-SPY_monthly$logDiff.Adjusted = diff(log(SPY_monthly$SPY.Adjusted))
+SPY_monthly$SimpleReturns.Adjusted = monthlyReturn(SPY_monthly$SPY.Adjusted)
 
 #plot log s&p 500 series
-autoplot(SPY_monthly$logDiff.Adjusted, ts.colour = "dodgerblue3", main = "SPY monthly log returns from 1993-01-29 to 2023-06-07", 
-         xlab = "Observation Date", ylab = "SPY daily adj. log returns") 
+autoplot(SPY_monthly$SimpleReturns.Adjusted, ts.colour = "dodgerblue3", main = "SPY monthly simple returns from 1993-01-29 to 2023-06-07", 
+         xlab = "Observation Date", ylab = "SPY daily adj. simple returns") 
 
 #let's try adf test on logged and original for SPY
-adf.test(na.omit(SPY_monthly$logDiff.Adjusted)) # null hypothesis rejected. STATIONARY! at 0.05
+adf.test(na.omit(SPY_monthly$SimpleReturns.Adjusted)) # null hypothesis rejected. STATIONARY! at 0.05
 adf.test(na.omit(SPY_monthly$SPY.Adjusted)) # not stationary  at 0.05
 
 #adf tests for CPI and UNRate
-adf.test(UNRATE$UNRATE) #stationary at 0.05
+adf.test(UNRATE$UNRATE) #not stationary at 0.05 (p-value 0.4415)
 adf.test(CPI$CPI) #stationary at 0.05
 
 #seasonality test for SPY monthly
-isSeasonal(SPY_monthly$logDiff.Adjusted, freq = 12) # returns False!
+isSeasonal(SPY_monthly$SimpleReturns.Adjusted, freq = 12) # returns False!
 isSeasonal(SPY_monthly$SPY.Adjusted, freq = 12) # returns False!
 
 #seasonality test for CPI and Unrate
@@ -188,20 +188,28 @@ isSeasonal(CPI_stationary) # returns False!
 adf.test(CPI_stationary) #CPI_stationary is the stationary UNRATE
 
 #let's drop SPY.Adjusted column because we won't use it.
-SPY_monthly = na.omit(SPY_monthly[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "logDiff.Adjusted")])
+SPY_monthly = na.omit(SPY_monthly[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SimpleReturns.Adjusted")])
 
 #build our dataset
 project_data = na.omit(merge.xts(SPY_monthly, CPI_stationary, UNRATE_stationary))
 head(project_data)
 tail(project_data)
 
+#CPI is a growth rate, so a ratio of current-previous value and previous value. 
+#UNRATE is a %, so again the same ratio as CPI but multiplied by 100.  
+#Log returns are  a ratio of log of current value to previous value (textbook pg 4). 
+#So, we  could just divide the UNRATE by 100 so we have everything as plain ratios?  
+
+project_data$UNRATE_stationary = project_data$UNRATE_stationary/100
+
+
 #CCF of S&P500 and UNRATE
-ccf(as.numeric(project_data$logDiff.Adjusted), as.numeric(project_data$UNRATE_stationary), 
-    main="SPY logdiff Adjusted Closing vs Unemployment Rate")
+ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$UNRATE_stationary), 
+    main="SPY Simple Adjusted Returns vs Unemployment Rate")
 
 #CCF of S&P500 and CPI
-ccf(as.numeric(project_data$logDiff.Adjusted), as.numeric(project_data$CPI_stationary), 
-    main="SPY logdiff Adjusted Closing vs CPI")
+ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI_stationary), 
+    main="SPY Simple Adjusted Returns vs CPI")
 
 #Correlation Matrix
 panel.cor <- function(x,y,...){
@@ -210,6 +218,6 @@ panel.cor <- function(x,y,...){
   r <- round(cor(x,y), 2)
   text(0.5, 0.5, r, cex=1.75)
 }
-pairs(cbind(SPY_logdiff_Adjusted_Closing = as.numeric(project_data$logDiff.Adjusted), CPI=as.numeric(project_data$CPI_stationary),
+pairs(cbind(SPY_SimpleReturns = as.numeric(project_data$SimpleReturns.Adjusted), CPI=as.numeric(project_data$CPI_stationary),
             Unemployment_Rate = as.numeric(project_data$UNRATE_stationary), Volume= as.numeric(project_data$SPY.Volume)),
       col="dodgerblue3", lower.panel = panel.cor)
