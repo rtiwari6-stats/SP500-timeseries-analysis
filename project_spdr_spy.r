@@ -213,3 +213,14 @@ panel.cor <- function(x,y,...){
 pairs(cbind(SPY_SimpleReturns = as.numeric(project_data$SimpleReturns.Adjusted), CPI=as.numeric(project_data$CPI),
             Unemployment_Rate = as.numeric(project_data$UNRATE), Volume= as.numeric(project_data$SPY.Volume)),
       col="dodgerblue3", lower.panel = panel.cor)
+
+
+# Lag plots 
+
+# I put 'corr = F' because for some reason the legend was taking up a lot of space in the plot. I can try to fix this tomorrow. 
+lag1.plot(project_data$SimpleReturns.Adjusted, corr = F, 12, col="dodgerblue3") # SimpleReturns.Adjusted plotted against its past values 
+lag2.plot(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI), corr = F, 8, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
+lag2.plot(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$UNRATE), corr = F, 8, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
+
+
+
