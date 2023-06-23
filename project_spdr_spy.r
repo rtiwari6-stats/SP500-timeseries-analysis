@@ -217,10 +217,71 @@ pairs(cbind(SPY_SimpleReturns = as.numeric(project_data$SimpleReturns.Adjusted),
 
 # Lag plots 
 
-# I put 'corr = F' because for some reason the legend was taking up a lot of space in the plot. I can try to fix this tomorrow. 
-lag1.plot(project_data$SimpleReturns.Adjusted, corr = F, 12, col="dodgerblue3") # SimpleReturns.Adjusted plotted against its past values 
-lag2.plot(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI), corr = F, 8, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
-lag2.plot(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$UNRATE), corr = F, 8, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
+#Not Important to understand the Lag1 Function as taken directly from github -> Only to change size of Legend and Plot Margins
+#Legend size -> cex argumemt in legend function inside 'for' loop
+#Plot margins -> cex argument in old.par
+lag1.plot <-
+  function(series, max.lag=1, corr=TRUE, smooth=TRUE, col=gray(.1), 
+           lwl=1, lwc=2, bgl=gray(1,.65), ltcol=1, box.col=8, cex=.9, ...){ 
+    
+    name1   = paste(deparse(substitute(series)),"(t-",sep="")
+    name2   = paste(deparse(substitute(series)),"(t)",sep="")
+    max.lag = as.integer(max.lag)
+    prow    = ceiling(sqrt(max.lag))
+    pcol    = ceiling(max.lag/prow)
+    a       = acf1(series, max.lag, plot=FALSE) 
+    old.par <- par(no.readonly = TRUE,cex.lab=0.7, cex.axis=0.7)
+    
+    series = as.ts(series)
+    par(mfrow = c(prow, pcol))
+    for(h in 1:max.lag){
+      u = ts.intersect(stats::lag(series,-h), series)
+      tsplot(u[,1], u[,2], type='p', xy.labels=FALSE, xy.lines=FALSE,margins = 1,
+             xlab=paste(name1,h,")",sep=""), ylab=name2, col=col, cex=cex, ...) 
+      if (smooth) 
+        lines(stats::lowess(u[,1], u[,2]), col=lwc, lwd=lwl)
+      if (corr)
+        legend("topright", legend=format(round(a[h], digits=2), nsmall=2), cex=.7,
+               text.col=ltcol, bg=bgl, adj=.25, box.col=box.col,bty = "L")
+    }
+    on.exit(par(old.par))
+  }
 
+#Not Important to understand the Lag1 Function as taken directly from github -> Only to change size of Legend and Plot Margins
+#Legend size -> cex argumemt in legend function inside 'for' loop
+#Plot margins -> cex argument in old.par
+lag2.plot <-
+  function(series1, series2, max.lag=0, corr=TRUE, smooth=TRUE, col=gray(.1),
+           lwl=1, lwc=2, bgl=gray(1,.65), ltcol=1, box.col=8, cex=.9, ...){ 
+    #
+    name1  = paste(deparse(substitute(series1)),"(t-",sep="")
+    name10 = paste(deparse(substitute(series1)),"(t)",sep="")
+    name2  = paste(deparse(substitute(series2)),"(t)",sep="")
+    #
+    max.lag = as.integer(max.lag)
+    m1      = max.lag + 1
+    prow    = ceiling(sqrt(m1))
+    pcol    = ceiling(m1/prow)
+    a       = stats::ccf(series1,series2,max.lag,plot=FALSE)$acf
+    old.par <- par(no.readonly = TRUE,cex.lab=0.7, cex.axis=0.7)
+    #
+    series1 = as.ts(series1)
+    series2 = as.ts(series2)
+    par(mfrow = c(prow,pcol))
+    for(h in 0:max.lag){       
+      u = ts.intersect(stats::lag(series1,-h), series2)            
+      Xlab = ifelse(h==0, name10, paste(name1,h,")",sep="")) 
+      tsplot(u[,1], u[,2], type='p', xy.labels=FALSE, xy.lines=FALSE, xlab=Xlab,,margins = 1, 
+             ylab=name2, col=col, cex=cex, ...) 
+      if (smooth) 
+        lines(stats::lowess(u[,1], u[,2]), col=lwc, lwd=lwl)
+      if (corr)
+        legend("topright", legend=format(round(a[m1-h], digits=2),nsmall=2), cex=.7,
+               text.col=ltcol, bg=bgl, adj=.25, box.col=box.col)
+    }
+    on.exit(par(old.par))
+  }
 
-
+lag1.plot(project_data$SimpleReturns.Adjusted, corr = T, 12, col="dodgerblue3")# SimpleReturns.Adjusted plotted against its past values 
+lag2.plot(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI), corr = T, 8, col="dodgerblue3")
+lag2.plot(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$UNRATE), corr = T, 8, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
