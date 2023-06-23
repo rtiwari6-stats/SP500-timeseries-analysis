@@ -122,12 +122,8 @@ decomp_func(spy_monthly_ts, title="Decomposition Plots for Monthly SPY")
 spy_quarterly_ts = ts(data = coredata(SPY_quarterly), start = c(1993,1), end = c(2023,6), frequency = 4)
 decomp_func(spy_quarterly_ts, title="Decomposition Plots for Quarterly SPY")
 
-#create log returns on adjusted price (monthly)
 #note that this is a random walk because we take the difference x(t) - x(t-1) as the first step to compute the returns
-# whatever is left is supposed to be random error.
-#step 1 convert to a data frame (can be tibble too)
-#this is daily series, so we have daily returns
-SPY_monthly$SimpleReturns.Adjusted = monthlyReturn(SPY_monthly$SPY.Adjusted)
+SPY_monthly$SimpleReturns.Adjusted = diff(SPY_monthly$SPY.Adjusted)
 
 #plot log s&p 500 series
 autoplot(SPY_monthly$SimpleReturns.Adjusted, ts.colour = "dodgerblue3", main = "SPY monthly simple returns from 1993-01-29 to 2023-06-07", 
@@ -135,7 +131,7 @@ autoplot(SPY_monthly$SimpleReturns.Adjusted, ts.colour = "dodgerblue3", main = "
 
 #let's try adf test on logged and original for SPY
 adf.test(na.omit(SPY_monthly$SimpleReturns.Adjusted)) # null hypothesis rejected. STATIONARY! at 0.05
-adf.test(na.omit(SPY_monthly$SPY.Adjusted)) # not stationary  at 0.05
+adf.test(na.omit(SPY_monthly$SPY.Adjusted)) # not stationary  at 0.05 (p-value 0.9785)
 
 #adf tests for CPI and UNRate
 adf.test(UNRATE$UNRATE) #not stationary at 0.05 (p-value 0.4415)
@@ -151,41 +147,38 @@ isSeasonal(CPI$CPI, freq = 12) #TRUE
 
 #decomposing CPI and UNRATE
 CPI_ts = ts(data = coredata(CPI), start = c(1993,1), end = c(2023,5), frequency = 12)
-autoplot(decompose(CPI_ts), main="Decomposing CPI monthly series") #clear seasonality
+autoplot(decompose(CPI_ts), main="Decomposing CPI monthly series") 
 
 UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,3), frequency = 12)
-autoplot(decompose(UNRATE_ts), main="Decomposing UNRATE monthly series") #clear seasonality
+autoplot(decompose(UNRATE_ts), main="Decomposing UNRATE monthly series")
+
+#Note: At this point spy_monthly is stationary, CPI is seasonal but stationary and UNRATE isn't stationary.
 
 #focussing on UNRATE
 #check acf
-acf(UNRATE$UNRATE) #doesn't decay much
+acf(UNRATE$UNRATE) #doesn't decay and not stationary - so we try differencing
 
 #let's just use decompose
 UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,5), frequency = 12) #copying this over
 UNRATE_decomp = decompose(UNRATE_ts)
-UNRATE_stationary = na.omit(UNRATE_ts - UNRATE_decomp$trend) #detrend
-acf(UNRATE_stationary) #acf shows some larger values and doesn't decay quickly so we take 1st diff
-UNRATE_stationary = diff(UNRATE_stationary, lag=12) # take a seasonal difference
-acf(UNRATE_stationary) #looks better
+UNRATE_stationary = na.omit(diff(UNRATE$UNRATE)) #detrend
+acf(UNRATE_stationary) #acf seems almost like white noise
 autoplot(UNRATE_stationary, 
-         main="first difference of seasonal & trend difference(from decompose fit) UNRATE monthly series", 
-         ylab="diff(diff(UNRATE_ts - UNRATE_decomp$seasonal - UNRATE_decomp$trend)") # looks good to me!
+         main="first difference of UNRATE monthly series", 
+         ylab="UNRATE") # looks good to me!
 adf.test(UNRATE_stationary) # stationary
-isSeasonal(UNRATE_stationary) #UNRATE_stationary is the stationary UNRATE
+isSeasonal(UNRATE_stationary) #stationary and non seasonal
 
 #Focussing on CPI
 CPI_ts = ts(data = coredata(CPI), start = c(1993,1), end = c(2023,3), frequency = 12)
 CPI_decomp = decompose(CPI_ts)
-CPI_stationary = na.omit(CPI_ts - CPI_decomp$seasonal - CPI_decomp$trend) #detrend, deseasonalized
-acf(CPI_stationary) #acf shows some larger values and doesn't decay quickly so we can take 1st diff
-#First diff doesn't change the result much except makes the ACF look better
-#CPI_stationary = diff(CPI_stationary)
-#acf(CPI_stationary) #looks better
+CPI_stationary = na.omit(diff(CPI$CPI, lag=12)) # take a seasonal difference
+acf(CPI_stationary) #acf shows some larger values and doesn't decay quickly but overall not too bad
 autoplot(CPI_stationary, 
-         main="seasonal & trend difference (from decompose fit) CPI monthly series", 
-         ylab="CPI_ts - CPI_decomp$seasonal - CPI_decomp$trend") # looks good to me!
+         main="seasonally differenced CPI monthly series", 
+         ylab="CPI") # looks good to me!
 isSeasonal(CPI_stationary) # returns False!
-adf.test(CPI_stationary) #CPI_stationary is the stationary UNRATE
+adf.test(CPI_stationary) #stationary and non seasonal
 
 #let's drop SPY.Adjusted column because we won't use it.
 SPY_monthly = na.omit(SPY_monthly[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SimpleReturns.Adjusted")])
@@ -197,18 +190,17 @@ tail(project_data)
 
 #CPI is a growth rate, so a ratio of current-previous value and previous value. 
 #UNRATE is a %, so again the same ratio as CPI but multiplied by 100.  
-#Log returns are  a ratio of log of current value to previous value (textbook pg 4). 
-#So, we  could just divide the UNRATE by 100 so we have everything as plain ratios?  
+#So, we  could just divide the UNRATE by 100 so we have everything non %s  
 
-project_data$UNRATE_stationary = project_data$UNRATE_stationary/100
+project_data$UNRATE = project_data$UNRATE/100 #remove %
 
 
 #CCF of S&P500 and UNRATE
-ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$UNRATE_stationary), 
+ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$UNRATE), 
     main="SPY Simple Adjusted Returns vs Unemployment Rate")
 
 #CCF of S&P500 and CPI
-ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI_stationary), 
+ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI), 
     main="SPY Simple Adjusted Returns vs CPI")
 
 #Correlation Matrix
@@ -218,6 +210,6 @@ panel.cor <- function(x,y,...){
   r <- round(cor(x,y), 2)
   text(0.5, 0.5, r, cex=1.75)
 }
-pairs(cbind(SPY_SimpleReturns = as.numeric(project_data$SimpleReturns.Adjusted), CPI=as.numeric(project_data$CPI_stationary),
-            Unemployment_Rate = as.numeric(project_data$UNRATE_stationary), Volume= as.numeric(project_data$SPY.Volume)),
+pairs(cbind(SPY_SimpleReturns = as.numeric(project_data$SimpleReturns.Adjusted), CPI=as.numeric(project_data$CPI),
+            Unemployment_Rate = as.numeric(project_data$UNRATE), Volume= as.numeric(project_data$SPY.Volume)),
       col="dodgerblue3", lower.panel = panel.cor)
