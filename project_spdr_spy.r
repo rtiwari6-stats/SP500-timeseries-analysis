@@ -1,4 +1,6 @@
 #626 project (quantmod)
+
+#load data
 library(quantmod)
 library(ggplot2)
 library(ggfortify)
@@ -9,6 +11,7 @@ library(tseries)
 library(seastests)
 library(TSstudio)
 library(astsa)
+
 #pull data
 getSymbols("SPY", src = 'yahoo', 
            from = "1993-01-29", to = "2023-06-07") # Note this can be current date too
@@ -154,7 +157,7 @@ autoplot(decompose(UNRATE_ts), main="Decomposing UNRATE monthly series")
 
 #Note: At this point spy_monthly is stationary, CPI is seasonal but stationary and UNRATE isn't stationary.
 
-#focussing on UNRATE
+#focusing on UNRATE
 #check acf
 acf(UNRATE$UNRATE) #doesn't decay and not stationary - so we try differencing
 
@@ -169,7 +172,7 @@ autoplot(UNRATE_stationary,
 adf.test(UNRATE_stationary) # stationary
 isSeasonal(UNRATE_stationary) #stationary and non seasonal
 
-#Focussing on CPI
+#Focusing on CPI
 CPI_ts = ts(data = coredata(CPI), start = c(1993,1), end = c(2023,3), frequency = 12)
 CPI_decomp = decompose(CPI_ts)
 CPI_stationary = na.omit(diff(CPI$CPI, lag=12)) # take a seasonal difference
@@ -197,10 +200,12 @@ project_data$UNRATE = project_data$UNRATE/100 #remove %
 
 #CCF of S&P500 and UNRATE
 ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$UNRATE), 
+    ylab = "CCF",
     main="SPY Simple Adjusted Returns vs Unemployment Rate")
 
 #CCF of S&P500 and CPI
-ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI), 
+ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI),
+    ylab = "CCF",
     main="SPY Simple Adjusted Returns vs CPI")
 
 #Correlation Matrix
@@ -217,10 +222,17 @@ pairs(cbind(SPY_SimpleReturns = as.numeric(project_data$SimpleReturns.Adjusted),
 
 # Lag plots 
 
-# I put 'corr = F' because for some reason the legend was taking up a lot of space in the plot. I can try to fix this tomorrow. 
-lag1.plot(project_data$SimpleReturns.Adjusted, corr = F, 12, col="dodgerblue3") # SimpleReturns.Adjusted plotted against its past values 
-lag2.plot(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI), corr = F, 8, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
-lag2.plot(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$UNRATE), corr = F, 8, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
+# fixed corr and labels
+SPY_adjusted = project_data$SimpleReturns.Adjusted
+lag1.plot(SPY_adjusted, corr = T, 12, col="dodgerblue3") # SimpleReturns.Adjusted plotted against its past values 
+
+#added extra underscore to SPY_adjusted_ because this one is numeric
+SPY_adjusted_ = as.numeric(project_data$SimpleReturns.Adjusted)
+CPI_val= as.numeric(project_data$CPI)
+lag2.plot(SPY_adjusted_,CPI_val, corr = T, 8, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
+
+UNRATE_val = as.numeric(project_data$UNRATE)
+lag2.plot(SPY_adjusted_,UNRATE_val, corr = T, 8, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
 
 
 
