@@ -271,3 +271,33 @@ for(i in 1:ncol(spy_ts)){
   plot_linear_quad_cubic_trend(colnames(spy_ts)[i], linear,quadratic,cubic)
 }
 
+# Work in progress 
+###############################################################################################333333
+#  Fittting regression models 
+
+
+cor(project_data$CPI, (project_data$CPI)^2) # not collinear 
+cor(project_data$UNRATE, (project_data$UNRATE)^2) # collinear 
+
+# Model 1 - glance() allows us to see AIC and BIC values 
+trend = time(project_data$SimpleReturns.Adjusted) # time is trend
+fit1 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + project_data$UNRATE, na.action=NULL)
+summary(fit1)
+broom::glance(fit1)
+
+# Model 2
+trend = time(project_data$SimpleReturns.Adjusted) # time is trend
+CPI_squared = project_data$CPI^2
+fit2 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + CPI_squared, na.action=NULL)
+summary(fit2)
+broom::glance(fit2)
+
+
+# Model 3
+trend = time(project_data$SimpleReturns.Adjusted) # time is trend
+CPI_squared = project_data$CPI^2
+fit3 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + CPI_squared + project_data$UNRATE, na.action=NULL)
+summary(fit3)
+broom::glance(fit3)
+
+#################################################################################################
