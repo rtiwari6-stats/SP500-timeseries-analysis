@@ -347,7 +347,7 @@ for(i in 1:ncol(dummydataforplot)){
 
 # Work in progress 
 ###############################################################################################333333
-#  Fittting regression models 
+#  Fitting regression models using only CPI and UNRATE as predictors (no VIX included)
 
 
 cor(project_data$CPI, (project_data$CPI)^2) # not collinear 
@@ -373,5 +373,25 @@ CPI_squared = project_data$CPI^2
 fit3 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + CPI_squared + project_data$UNRATE, na.action=NULL)
 summary(fit3)
 broom::glance(fit3)
+
+
+# Model 4
+
+fit4 = lm(project_data$SimpleReturns.Adjusted ~ project_data$CPI + project_data$UNRATE, na.action=NULL)
+summary(fit4)
+broom::glance(fit4)
+
+# Model 5 - we're removing the first entry for SimpleReturns.Adjusted and UNRATE to have equal number of observations as CPI
+fit5 = lm(project_data$SimpleReturns.Adjusted[-1] ~ na.omit(lag(project_data$CPI, k = 1)) + project_data$UNRATE[-1], na.action=NULL)
+summary(fit5)
+broom::glance(fit5)
+
+
+# Model 6 - we're removing the first two entries for SimpleReturns.Adjusted 
+#           and first entry of CPI to have equal number of observations as UNRATE
+fit6 = lm(project_data$SimpleReturns.Adjusted[-(1:2)] ~ na.omit(lag(project_data$CPI, k = 1))[-1] + 
+            na.omit(lag(project_data$UNRATE, k = 2)), na.action=NULL)
+summary(fit6)
+broom::glance(fit6)
 
 #################################################################################################
