@@ -271,6 +271,40 @@ for(i in 1:ncol(spy_ts)){
   plot_linear_quad_cubic_trend(colnames(spy_ts)[i], linear,quadratic,cubic)
 }
 
+#Lowess Smoothening
+
+#lowess smoother with different spans
+plot_lowess_smoother = function(ts){
+  m1 = lowess(spy_ts[, ts], f=0.5)
+  m2 = lowess(spy_ts[, ts], f=0.05)
+  m3 = lowess(spy_ts[, ts], f=0.005)
+  m4 = lowess(spy_ts[, ts], f=0.0005)
+  m5 = lowess(spy_ts[, ts], f=0.00005)
+  old.par <- par(no.readonly = TRUE,cex.lab=0.7, cex.axis=0.9)
+  par(mar = c(2.5,2,2.5, 2))
+  
+  plot(spy_ts[,ts], main = paste(ts))
+  lines(m1, lwd=2, col="red")
+  lines(m2, lwd=2, col="blue")
+  lines(m3, lwd=2, col="green")
+  lines(m3, lwd=2, col="lightblue")
+  lines(m3, lwd=2, col="purple")
+  legend("topleft",                                              
+         col = c("red", "blue", "green", 'lightblue', "purple"),
+         lty = 1,
+         lwd = 2,
+         c("0.5", "0.05", "0.005", "0.0005", "0.00005"))
+  on.exit(par(old.par))
+}
+par(mar=c(1.5,1.5,1.5,1.5))
+par(mfrow=c(3,3), oma = c(0,0,2,0))
+#TODO: Please fix naming and scales
+for(i in 1:ncol(spy_ts)){
+  title("Lowess smoothing with different spans for: ", line = 0, outer = TRUE)
+  plot_lowess_smoother(colnames(spy_ts)[i])
+} #the one with smallest span captures the series well which is expected
+
+
 # Work in progress 
 ###############################################################################################333333
 #  Fittting regression models 
