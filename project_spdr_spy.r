@@ -199,12 +199,12 @@ project_data$UNRATE = project_data$UNRATE/100 #remove %
 
 
 #CCF of S&P500 and UNRATE
-ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$UNRATE), 
+ccf(as.numeric(project_data$UNRATE), as.numeric(project_data$SimpleReturns.Adjusted), 
     ylab = "CCF",
     main="SPY Simple Adjusted Returns vs Unemployment Rate")
 
 #CCF of S&P500 and CPI
-ccf(as.numeric(project_data$SimpleReturns.Adjusted), as.numeric(project_data$CPI),
+ccf(as.numeric(project_data$CPI),as.numeric(project_data$SimpleReturns.Adjusted),
     ylab = "CCF",
     main="SPY Simple Adjusted Returns vs CPI")
 
@@ -215,7 +215,7 @@ panel.cor <- function(x,y,...){
   r <- round(cor(x,y), 2)
   text(0.5, 0.5, r, cex=1.75)
 }
-pairs(cbind(SPY_SimpleReturns = as.numeric(project_data$SimpleReturns.Adjusted), CPI=as.numeric(project_data$CPI),
+pairs(cbind( CPI=as.numeric(project_data$CPI),SPY_SimpleReturns = as.numeric(project_data$SimpleReturns.Adjusted),
             Unemployment_Rate = as.numeric(project_data$UNRATE), Volume= as.numeric(project_data$SPY.Volume)),
       col="dodgerblue3", lower.panel = panel.cor)
 
@@ -229,108 +229,14 @@ lag1.plot(SPY_adjusted, corr = T, 12, col="dodgerblue3") # SimpleReturns.Adjuste
 #added extra underscore to SPY_adjusted_ because this one is numeric
 SPY_adjusted_ = as.numeric(project_data$SimpleReturns.Adjusted)
 CPI_val= as.numeric(project_data$CPI)
-lag2.plot(SPY_adjusted_,CPI_val, corr = T, 8, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
+lag2.plot(CPI_val,SPY_adjusted_, corr = T, 8, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
 
 UNRATE_val = as.numeric(project_data$UNRATE)
-lag2.plot(SPY_adjusted_,UNRATE_val, corr = T, 8, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
+lag2.plot(UNRATE_val,SPY_adjusted_, corr = T, 8, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
 
 
-#Regressions - Linear,Quad,Cubic Trends in SPY Data
-spy_ts = na.omit(as.ts(SPY[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted")]))
-trend = time(spy_ts)
+#fitting lag regression line
 
-#Linear,Quadratic,Cubic Trend
-plot_linear_quad_cubic_trend = function(ts, curve1,curve2,curve3){
-  pred1 = predict(curve1)
-  pred2 = predict(curve2)
-  pred3 = predict(curve3)
-  ix = base::sort(trend, index.return=T)  
-  
-  old.par <- par(no.readonly = TRUE,cex.lab=0.7, cex.axis=0.9)
-  par(mar = c(2.5,2,2.5, 2))
-  
-  plot(spy_ts[,ts], main = paste("Trends for", ts),col="grey")
-  lines(trend[ix], pred1[ix],lwd=2, col="red")
-  lines(trend[ix], pred2[ix],lwd=2, col="blue")
-  lines(trend[ix], pred3[ix],lwd=2, col="green")
-  legend("topleft", legend=c('Original Data','Linear','Quadratic','Cubic'), cex=.6,
-         text.col=1, bg=gray(1,.65), adj=.25,lty = c(1, 1,1),
-         col = c("grey","red","blue","green"))
-  on.exit(par(old.par))
-}
+object_unrate = ts.intersect( UNRATE_val, spyL1 = lag(SPY_adjusted_,+1) )
+summary(fit1 <- lm(spyL1~ UNRATE_val, data=object_unrate, na.action=NULL))
 
-par(mar=c(1.5,1.5,1.5,1.5))
-par(mfrow=c(2,3), oma = c(0,0,2,0))
-
-
-for(i in 1:ncol(spy_ts)){
-  linear = lm(spy_ts[,i] ~ trend, na.action = NULL)
-  quadratic = lm(spy_ts[,i] ~ trend + I(trend ^ 2), na.action = NULL)
-  cubic = lm(spy_ts[,i] ~ trend + I(trend ^ 2) + I(trend ^ 3), na.action = NULL)
-  title("Regression for SPY Data - Linear, Quadratic, Cubic", line = 0, outer = TRUE)
-  plot_linear_quad_cubic_trend(colnames(spy_ts)[i], linear,quadratic,cubic)
-}
-
-#lowess smoother with different spans
-dummydataforplot = na.omit(as.ts(project_data[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SimpleReturns.Adjusted","CPI","UNRATE")]))
-plot_lowess_smoother = function(ts){
-  m1 = lowess(dummydataforplot[, ts], f=0.5)
-  m2 = lowess(dummydataforplot[, ts], f=0.05)
-  m3 = lowess(dummydataforplot[, ts], f=0.005)
-  m4 = lowess(dummydataforplot[, ts], f=0.0005)
-  m5 = lowess(dummydataforplot[, ts], f=0.00005)
-  old.par <- par(no.readonly = TRUE,cex.lab=0.7, cex.axis=0.9)
-  par(mar = c(2.5,2,2.5, 2))
-  
-  plot(dummydataforplot[,ts], main = paste(ts))
-  lines(m1, lwd=2, col="red")
-  lines(m2, lwd=2, col="blue")
-  lines(m3, lwd=2, col="green")
-  lines(m3, lwd=2, col="lightblue")
-  lines(m3, lwd=2, col="purple")
-  legend("topleft",                                              
-         col = c("red", "blue", "green", 'lightblue', "purple"),
-         lty = 1,
-         lwd = 2,
-         c("0.5", "0.05", "0.005", "0.0005", "0.00005"),cex=0.7)
-  on.exit(par(old.par))
-}
-par(mar=c(1.5,1.5,1.5,1.5))
-par(mfrow=c(3,3), oma = c(0,0,2,0))
-
-#TODO: Please fix naming and scales
-for(i in 1:ncol(dummydataforplot)){
-  title("Lowess smoothing with different spans for: ", line = 0, outer = TRUE)
-  plot_lowess_smoother(colnames(dummydataforplot)[i])
-}
-
-# Work in progress 
-###############################################################################################333333
-#  Fittting regression models 
-
-
-cor(project_data$CPI, (project_data$CPI)^2) # not collinear 
-cor(project_data$UNRATE, (project_data$UNRATE)^2) # collinear 
-
-# Model 1 - glance() allows us to see AIC and BIC values 
-trend = time(project_data$SimpleReturns.Adjusted) # time is trend
-fit1 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + project_data$UNRATE, na.action=NULL)
-summary(fit1)
-broom::glance(fit1)
-
-# Model 2
-trend = time(project_data$SimpleReturns.Adjusted) # time is trend
-CPI_squared = project_data$CPI^2
-fit2 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + CPI_squared, na.action=NULL)
-summary(fit2)
-broom::glance(fit2)
-
-
-# Model 3
-trend = time(project_data$SimpleReturns.Adjusted) # time is trend
-CPI_squared = project_data$CPI^2
-fit3 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + CPI_squared + project_data$UNRATE, na.action=NULL)
-summary(fit3)
-broom::glance(fit3)
-
-#################################################################################################
