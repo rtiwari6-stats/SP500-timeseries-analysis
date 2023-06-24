@@ -235,4 +235,39 @@ UNRATE_val = as.numeric(project_data$UNRATE)
 lag2.plot(SPY_adjusted_,UNRATE_val, corr = T, 8, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
 
 
+#Regressions - Linear,Quad,Cubic Trends in SPY Data
+spy_ts = na.omit(as.ts(SPY[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SPY.Adjusted")]))
+trend = time(spy_ts)
+
+#Linear,Quadratic,Cubic Trend
+plot_linear_quad_cubic_trend = function(ts, curve1,curve2,curve3){
+  pred1 = predict(curve1)
+  pred2 = predict(curve2)
+  pred3 = predict(curve3)
+  ix = base::sort(trend, index.return=T)  
+  
+  old.par <- par(no.readonly = TRUE,cex.lab=0.7, cex.axis=0.9)
+  par(mar = c(2.5,2,2.5, 2))
+  
+  plot(spy_ts[,ts], main = paste("Trends for", ts),col="grey")
+  lines(trend[ix], pred1[ix],lwd=2, col="red")
+  lines(trend[ix], pred2[ix],lwd=2, col="blue")
+  lines(trend[ix], pred3[ix],lwd=2, col="green")
+  legend("topleft", legend=c('Original Data','Linear','Quadratic','Cubic'), cex=.6,
+         text.col=1, bg=gray(1,.65), adj=.25,lty = c(1, 1,1),
+         col = c("grey","red","blue","green"))
+  on.exit(par(old.par))
+}
+
+par(mar=c(1.5,1.5,1.5,1.5))
+par(mfrow=c(2,3), oma = c(0,0,2,0))
+
+
+for(i in 1:ncol(spy_ts)){
+  linear = lm(spy_ts[,i] ~ trend, na.action = NULL)
+  quadratic = lm(spy_ts[,i] ~ trend + I(trend ^ 2), na.action = NULL)
+  cubic = lm(spy_ts[,i] ~ trend + I(trend ^ 2) + I(trend ^ 3), na.action = NULL)
+  title("Regression for SPY Data - Linear, Quadratic, Cubic", line = 0, outer = TRUE)
+  plot_linear_quad_cubic_trend(colnames(spy_ts)[i], linear,quadratic,cubic)
+}
 
