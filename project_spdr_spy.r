@@ -292,7 +292,7 @@ plot_lowess_smoother = function(ts){
          col = c("red", "blue", "green", 'lightblue', "purple"),
          lty = 1,
          lwd = 2,
-         c("0.5", "0.05", "0.005", "0.0005", "0.00005"))
+         c("0.5", "0.05", "0.005", "0.0005", "0.00005"),cex=0.7)
   on.exit(par(old.par))
 }
 par(mar=c(1.5,1.5,1.5,1.5))
