@@ -20,6 +20,8 @@ str(SPY)
 
 #print some data
 head(SPY)
+#plot
+autoplot(SPY,ts.colour = "dodgerblue3", ylab = "SPY", main="SPY from 1993-01 to 2023-05")
 
 #Using getSymbols for fred data too to get XTS types
 getSymbols.FRED("UNRATE", from = "1993-01-29", to = "2023-06-07", env=globalenv()) #unemployment rate 
@@ -46,10 +48,8 @@ str(VIX)
 #print some data
 head(VIX) #from 2014 onwards only
 
-#convert to monthly
-vix_monthly = to.monthly(VIX)
 #plot it
-autoplot(vix_monthly,ts.colour = "dodgerblue3", ylab = "VIX", main="Volatility Index (VIX) from 1993-01 to 2023-06")
+autoplot(VIX,ts.colour = "dodgerblue3", ylab = "VIX", main="Volatility Index (VIX) from 1993-01 to 2023-06")
 
 
 #create plot function for S&P 500
@@ -77,88 +77,26 @@ plot_all_spy_series = function(my_spy, title="SPY data from 1993-01-29 to 2023-0
 #plot all spy columns
 plot_all_spy_series(SPY)
 
-#Seasonality checks
-#Try with monthly data 
-SPY_monthly = to.monthly(SPY) #convert the OHLC series to monthly
-#plot all monthly series
-plot_all_spy_series(SPY_monthly, title="SPY Monthly data from 1993-01-29 to 2023-06-07", 
-                    nRow=ncol(SPY_monthly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
-
-#next try quarterly data
-SPY_quarterly = to.quarterly(SPY) #convert the OHLC series to quarterly
-plot_all_spy_series(SPY_quarterly, title="SPY Quarterly data from 1993-01-29 to 2023-06-07", 
-                    nRow=ncol(SPY_quarterly)-1, date_breaks = '3 months', date_labels = '%b %Y', angle=90)
-
-#check for seasonality using decomposition
-#let us write a decomposed series plotter first
-decomp_func <- function(dataset, nRow = 3, title = "Decomposition Plots for SPY") {
-  
-  open_dc = decompose(spy_monthly_ts[,"SPY.Open"])
-  high_dc = decompose(spy_monthly_ts[,"SPY.High"])
-  low_dc = decompose(spy_monthly_ts[,"SPY.Low"])
-  close_dc = decompose(spy_monthly_ts[,"SPY.Close"])
-  volume_dc = decompose(spy_monthly_ts[,"SPY.Volume"])                     
-  Adjusted_dc = decompose(spy_monthly_ts[,"SPY.Adjusted"])
-  
-  #can write another function for this                
-  open_dc_xts = merge.xts(as.xts(open_dc$seasonal), as.xts(open_dc$x), as.xts(open_dc$trend), as.xts(open_dc$random))
-  names(open_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
-  
-  high_dc_xts = merge.xts(as.xts(high_dc$seasonal), as.xts(high_dc$x), as.xts(high_dc$trend), as.xts(high_dc$random))
-  names(high_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
-  
-  low_dc_xts = merge.xts(as.xts(low_dc$seasonal), as.xts(low_dc$x), as.xts(low_dc$trend), as.xts(low_dc$random))
-  names(low_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
-  
-  close_dc_xts = merge.xts(as.xts(close_dc$seasonal), as.xts(close_dc$x), as.xts(close_dc$trend), as.xts(close_dc$random))
-  names(close_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
-  
-  volume_dc_xts = merge.xts(as.xts(volume_dc$seasonal), as.xts(volume_dc$x), as.xts(volume_dc$trend), as.xts(volume_dc$random))
-  names(volume_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
-  
-  adjusted_dc_xts = merge.xts(as.xts(Adjusted_dc$seasonal), as.xts(Adjusted_dc$x), as.xts(Adjusted_dc$trend), as.xts(Adjusted_dc$random))
-  names(adjusted_dc_xts) = c("Seasonal", "Data", "Trend", "Random")
-  
-  p1 <- autoplot(open_dc_xts, ylab = "SPY.Open", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
-  p2 <- autoplot(high_dc_xts, ylab = "SPY.High", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
-  p3 <- autoplot(low_dc_xts, ylab = "SPY.Low", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
-  p4 <- autoplot(close_dc_xts, ylab = "SPY.Close", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
-  p5 <- autoplot(volume_dc_xts, ylab = "SPY.Volume", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
-  p6 <- autoplot(adjusted_dc_xts, ylab = "SPY.Adjusted", main="")+ scale_x_date(date_breaks = '3 months', date_labels = "%b %Y") +  theme(axis.text.x = element_text(angle = 90))
-  
-  grid.arrange(p1,p2,p3,p4,p5,p6, nrow = nRow, top=textGrob(title))
-  
-}
-
-#start and end are hard coded!!
-#daily - decompose, stl do not work so not seasonality for any column.
-
-#monthly
-spy_monthly_ts = ts(data = coredata(SPY_monthly), start = c(1993,1), end = c(2023,6), frequency = 12)
-decomp_func(spy_monthly_ts, title="Decomposition Plots for Monthly SPY")
-
-#Quarterly
-spy_quarterly_ts = ts(data = coredata(SPY_quarterly), start = c(1993,1), end = c(2023,6), frequency = 4)
-decomp_func(spy_quarterly_ts, title="Decomposition Plots for Quarterly SPY")
+#daily SPY - decompose, stl do not work so not seasonality for any column.
 
 #note that this is a random walk because we take the difference x(t) - x(t-1) as the first step to compute the returns
-SPY_monthly$SimpleReturns.Adjusted = diff(SPY_monthly$SPY.Adjusted)
+SPY$LogReturns.Adjusted = diff(log(SPY$SPY.Adjusted))
 
 #plot log s&p 500 series
-autoplot(SPY_monthly$SimpleReturns.Adjusted, ts.colour = "dodgerblue3", main = "SPY monthly simple returns from 1993-01-29 to 2023-06-07", 
-         xlab = "Observation Date", ylab = "SPY daily adj. simple returns") 
+autoplot(SPY$LogReturns.Adjusted, ts.colour = "dodgerblue3", main = "SPY log returns from 1993-01-29 to 2023-06-07", 
+         xlab = "Observation Date", ylab = "SPY daily adj. log returns") 
 
 #let's try adf test on logged and original for SPY
-adf.test(na.omit(SPY_monthly$SimpleReturns.Adjusted)) # null hypothesis rejected. STATIONARY! at 0.05
-adf.test(na.omit(SPY_monthly$SPY.Adjusted)) # not stationary  at 0.05 (p-value 0.9785)
+adf.test(na.omit(SPY$LogReturns.Adjusted)) # null hypothesis rejected (p-value 0.01). STATIONARY! at 0.05
+adf.test(na.omit(SPY$SPY.Adjusted)) # not stationary  at 0.05 (p-value 0.9756)
 
 #adf tests for CPI and UNRate
 adf.test(UNRATE$UNRATE) #not stationary at 0.05 (p-value 0.4415)
 adf.test(CPI$CPI) #stationary at 0.05
 
 #seasonality test for SPY monthly
-isSeasonal(SPY_monthly$SimpleReturns.Adjusted, freq = 12) # returns False!
-isSeasonal(SPY_monthly$SPY.Adjusted, freq = 12) # returns False!
+isSeasonal(SPY$LogReturns.Adjusted, freq = 12) # returns False!
+isSeasonal(SPY$SPY.Adjusted, freq = 12) # returns False!
 
 #seasonality test for CPI and Unrate
 isSeasonal(UNRATE$UNRATE, freq = 12) #FALSE
@@ -200,20 +138,21 @@ isSeasonal(CPI_stationary) # returns False!
 adf.test(CPI_stationary) #stationary and non seasonal
 
 #focus on VIX
-adf.test(vix_monthly$VIX.Adjusted) #p-value (0.0358) is a bit high, perhaps some non stationarity
-isSeasonal(vix_monthly$VIX.Adjusted) # FALSE!
-acf(vix_monthly$VIX.Adjusted) #this decays reasonably well so the non stationarity isn't too bad
-#let's try first difference
-vix_monthly_diff.Adjusted = na.omit(diff(vix_monthly$VIX.Adjusted))
-adf.test(vix_monthly_diff.Adjusted) #p-value is very low now
-isSeasonal(vix_monthly_diff.Adjusted) # FALSE!
-acf(vix_monthly_diff.Adjusted) #more or less white noise
+VIX = na.omit(VIX)
+adf.test(VIX$VIX.Adjusted) #p-value 0.01, stationary!
+isSeasonal(VIX$VIX.Adjusted) # TRUE but can't get stl or decompose to work so we don't do anything!
+acf(VIX$VIX.Adjusted) #this decays reasonably well
 
-#let's drop SPY.Adjusted column because we won't use it.
-SPY_monthly = na.omit(SPY_monthly[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SimpleReturns.Adjusted")])
+#let's drop NA values
+SPY = na.omit(SPY)
 
 #build our dataset
-project_data = na.omit(merge.xts(SPY_monthly, CPI_stationary, UNRATE_stationary, vix_monthly_diff.Adjusted))
+#First expand unrate and cpi
+CPI_stationary = na.locf(merge(CPI_stationary, foo=zoo(NA, order.by=seq(start(CPI_stationary), end(CPI_stationary),
+                                                             "day",drop=F)))[, 1])
+UNRATE_stationary = na.locf(merge(UNRATE_stationary, foo=zoo(NA, order.by=seq(start(UNRATE_stationary), end(UNRATE_stationary),
+                                                                           "day",drop=F)))[, 1])
+project_data = na.omit(merge.xts(SPY, CPI_stationary, UNRATE_stationary, VIX$VIX.Adjusted))
 head(project_data)
 tail(project_data)
 
@@ -225,19 +164,19 @@ project_data$UNRATE = project_data$UNRATE/100 #remove %
 
 
 #CCF of S&P500 and UNRATE
-ccf(as.numeric(project_data$UNRATE), as.numeric(project_data$SimpleReturns.Adjusted), 
+ccf(as.numeric(project_data$UNRATE), as.numeric(project_data$LogReturns.Adjusted), 
     ylab = "CCF",
-    main="SPY Simple Adjusted Returns vs Unemployment Rate")
+    main="SPY Log Adjusted Returns vs Unemployment Rate")
 
 #CCF of S&P500 and CPI
-ccf(as.numeric(project_data$CPI),as.numeric(project_data$SimpleReturns.Adjusted),
+ccf(as.numeric(project_data$CPI),as.numeric(project_data$LogReturns.Adjusted),
     ylab = "CCF",
-    main="SPY Simple Adjusted Returns vs CPI")
+    main="SPY Log Adjusted Returns vs CPI")
 
 #CCF of SPY and VIX
-ccf(as.numeric(project_data$VIX.Adjusted),as.numeric(project_data$SimpleReturns.Adjusted),
+ccf(as.numeric(project_data$VIX.Adjusted),as.numeric(project_data$LogReturns.Adjusted),
     ylab = "CCF",
-    main="SPY Simple Adjusted Returns vs VIX")
+    main="SPY Log Adjusted Returns vs VIX")
 
 #Correlation Matrix
 panel.cor <- function(x,y,...){
@@ -246,7 +185,7 @@ panel.cor <- function(x,y,...){
   r <- round(cor(x,y), 2)
   text(0.5, 0.5, r, cex=1.75)
 }
-pairs(cbind( CPI=as.numeric(project_data$CPI),SPY_SimpleReturns = as.numeric(project_data$SimpleReturns.Adjusted),
+pairs(cbind( CPI=as.numeric(project_data$CPI),SPY_LogReturns = as.numeric(project_data$LogReturns.Adjusted),
              Unemployment_Rate = as.numeric(project_data$UNRATE), Volume= as.numeric(project_data$SPY.Volume),  
              VIX = as.numeric(project_data$VIX.Adjusted)), 
       col="dodgerblue3", lower.panel = panel.cor)
@@ -255,11 +194,11 @@ pairs(cbind( CPI=as.numeric(project_data$CPI),SPY_SimpleReturns = as.numeric(pro
 # Lag plots 
 
 # fixed corr and labels
-SPY_adjusted = project_data$SimpleReturns.Adjusted
-lag1.plot(SPY_adjusted, corr = T, 12, col="dodgerblue3") # SimpleReturns.Adjusted plotted against its past values 
+SPY_adjusted = project_data$LogReturns.Adjusted
+lag1.plot(SPY_adjusted, corr = T, 12, col="dodgerblue3") # Log Returns plotted against its past values 
 
 #added extra underscore to SPY_adjusted_ because this one is numeric
-SPY_adjusted_ = as.numeric(project_data$SimpleReturns.Adjusted)
+SPY_adjusted_ = as.numeric(project_data$LogReturns.Adjusted)
 CPI_val= as.numeric(project_data$CPI)
 lag2.plot(CPI_val,SPY_adjusted_, corr = T, 8, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
 
@@ -312,7 +251,7 @@ for(i in 1:ncol(spy_ts)){
 }
 
 #lowess smoother with different spans
-dummydataforplot = na.omit(as.ts(project_data[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "SimpleReturns.Adjusted","CPI","UNRATE", "VIX.Adjusted")]))
+dummydataforplot = na.omit(as.ts(project_data[, c("SPY.Open", "SPY.High", "SPY.Low", "SPY.Close", "SPY.Volume", "LogReturns.Adjusted","CPI","UNRATE", "VIX.Adjusted")]))
 plot_lowess_smoother = function(ts){
   m1 = lowess(dummydataforplot[, ts], f=0.5)
   m2 = lowess(dummydataforplot[, ts], f=0.05)
@@ -347,49 +286,48 @@ for(i in 1:ncol(dummydataforplot)){
 
 # Work in progress 
 ###############################################################################################333333
-#  Fitting regression models using only CPI and UNRATE as predictors (no VIX included)
+#  Fittting regression models 
 
 
 cor(project_data$CPI, (project_data$CPI)^2) # not collinear 
 cor(project_data$UNRATE, (project_data$UNRATE)^2) # collinear 
 
 # Model 1 - glance() allows us to see AIC and BIC values 
-trend = time(project_data$SimpleReturns.Adjusted) # time is trend
-fit1 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + project_data$UNRATE, na.action=NULL)
+trend = time(project_data$LogReturns.Adjusted) # time is trend
+fit1 = lm(project_data$LogReturns.Adjusted ~ trend + project_data$CPI + project_data$UNRATE, na.action=NULL)
 summary(fit1)
 broom::glance(fit1)
 
 # Model 2
-trend = time(project_data$SimpleReturns.Adjusted) # time is trend
+trend = time(project_data$LogReturns.Adjusted) # time is trend
 CPI_squared = project_data$CPI^2
-fit2 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + CPI_squared, na.action=NULL)
+fit2 = lm(project_data$LogReturns.Adjusted ~ trend + project_data$CPI + CPI_squared, na.action=NULL)
 summary(fit2)
 broom::glance(fit2)
 
 
 # Model 3
-trend = time(project_data$SimpleReturns.Adjusted) # time is trend
+trend = time(project_data$LogReturns.Adjusted) # time is trend
 CPI_squared = project_data$CPI^2
-fit3 = lm(project_data$SimpleReturns.Adjusted ~ trend + project_data$CPI + CPI_squared + project_data$UNRATE, na.action=NULL)
+fit3 = lm(project_data$LogReturns.Adjusted ~ trend + project_data$CPI + CPI_squared + project_data$UNRATE, na.action=NULL)
 summary(fit3)
 broom::glance(fit3)
 
-
 # Model 4
 
-fit4 = lm(project_data$SimpleReturns.Adjusted ~ project_data$CPI + project_data$UNRATE, na.action=NULL)
+fit4 = lm(project_data$LogReturns.Adjusted ~ project_data$CPI + project_data$UNRATE, na.action=NULL)
 summary(fit4)
 broom::glance(fit4)
 
 # Model 5 - we're removing the first entry for SimpleReturns.Adjusted and UNRATE to have equal number of observations as CPI
-fit5 = lm(project_data$SimpleReturns.Adjusted[-1] ~ na.omit(lag(project_data$CPI, k = 1)) + project_data$UNRATE[-1], na.action=NULL)
+fit5 = lm(project_data$LogReturns.Adjusted[-1] ~ na.omit(lag(project_data$CPI, k = 1)) + project_data$UNRATE[-1], na.action=NULL)
 summary(fit5)
 broom::glance(fit5)
 
 
 # Model 6 - we're removing the first two entries for SimpleReturns.Adjusted 
 #           and first entry of CPI to have equal number of observations as UNRATE
-fit6 = lm(project_data$SimpleReturns.Adjusted[-(1:2)] ~ na.omit(lag(project_data$CPI, k = 1))[-1] + 
+fit6 = lm(project_data$LogReturns.Adjusted[-(1:2)] ~ na.omit(lag(project_data$CPI, k = 1))[-1] + 
             na.omit(lag(project_data$UNRATE, k = 2)), na.action=NULL)
 summary(fit6)
 broom::glance(fit6)
