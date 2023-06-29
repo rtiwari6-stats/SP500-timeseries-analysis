@@ -332,4 +332,11 @@ fit6 = lm(project_data$LogReturns.Adjusted[-(1:2)] ~ na.omit(lag(project_data$CP
 summary(fit6)
 broom::glance(fit6)
 
+# Model 7 - let's add VIX into the model
+fit7 = lm(project_data$LogReturns.Adjusted ~ project_data$CPI + 
+            project_data$UNRATE + project_data$VIX.Adjusted)
+summary(fit7)
+broom::glance(fit7)
+
+
 #################################################################################################
