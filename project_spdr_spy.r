@@ -111,6 +111,10 @@ autoplot(decompose(UNRATE_ts), main="Decomposing UNRATE monthly series")
 
 #Note: At this point spy_monthly is stationary, CPI is seasonal but stationary and UNRATE isn't stationary.
 
+#acf for SPY$LogReturns.Adjusted
+acf(SPY$LogReturns.Adjusted)
+pacf(SPY$LogReturns.Adjusted)
+
 #focusing on UNRATE
 #check acf
 acf(UNRATE$UNRATE) #doesn't decay and not stationary - so we try differencing
@@ -120,6 +124,7 @@ UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,5), freq
 UNRATE_decomp = decompose(UNRATE_ts)
 UNRATE_stationary = na.omit(diff(UNRATE$UNRATE)) #detrend
 acf(UNRATE_stationary) #acf seems almost like white noise
+pacf(UNRATE_stationary)
 autoplot(UNRATE_stationary, 
          main="first difference of UNRATE monthly series", 
          ylab="UNRATE") # looks good to me!
@@ -131,6 +136,7 @@ CPI_ts = ts(data = coredata(CPI), start = c(1993,1), end = c(2023,3), frequency 
 CPI_decomp = decompose(CPI_ts)
 CPI_stationary = na.omit(diff(CPI$CPI, lag=12)) # take a seasonal difference
 acf(CPI_stationary) #acf shows some larger values and doesn't decay quickly but overall not too bad
+pacf(CPI_stationary)
 autoplot(CPI_stationary, 
          main="seasonally differenced CPI monthly series", 
          ylab="CPI") # looks good to me!
@@ -142,6 +148,7 @@ VIX = na.omit(VIX)
 adf.test(VIX$VIX.Adjusted) #p-value 0.01, stationary!
 isSeasonal(VIX$VIX.Adjusted) # TRUE but can't get stl or decompose to work so we don't do anything!
 acf(VIX$VIX.Adjusted) #this decays reasonably well
+pacf(VIX$VIX.Adjusted)
 
 #let's drop NA values
 SPY = na.omit(SPY)
