@@ -339,4 +339,97 @@ summary(fit7)
 broom::glance(fit7)
 
 
+#Fitting best model
+#Below methods is referenced from CHAPTER 3 and 6 from Book- ISLR (An Introduction to Statistical Learning: With Applications in R)
+#E-Book: https://hastie.su.domains/ISLR2/ISLRv2_website.pdf
+
+
+#We will create various columns for Transformations/predictors
+# @Team - CAN ADD MORE COLUMNS of Transformations to see if they make a change in R2, BIC or AIC. If they don't, algo will anyways not give priority to them 
+#The best of the predictors to represent our linear model will be determined using Subset Selection Methods and BIC, Cp2, Adj. R2
+#Creating new data object
+Data_LR = project_data[,c('LogReturns.Adjusted','CPI','UNRATE','VIX.Adjusted')]
+
+#Predictor Columns - Type: Square
+#Will help to capture non-linear behavior bw Response and Predictor if any, if not will be ignored by Algorithm (Pg. 104)
+Data_LR$CPI2 = (Data_LR$CPI)^2
+Data_LR$UNRATE2 = (Data_LR$UNRATE)^2
+Data_LR$VIX.Adjusted2 = (Data_LR$VIX.Adjusted)^2
+
+#Predictor Columns - Type: Square Root
+#Will help to resolve heteroscedasticity / Non-constant variance of Error terms (Pg. 106)
+Data_LR$CPISqrt = (Data_LR$CPI)^(1/2)
+Data_LR$UNRATESqrt = (Data_LR$UNRATE)^(1/2)
+Data_LR$VIX.AdjustedSqrt = (Data_LR$VIX.Adjusted)^(1/2)
+
+#Predictor Columns - Type: Logarithm Transform
+#Will help to resolve heteroscedasticity /  Non-constant variance of Error terms (Pg. 106)
+Data_LR$CPILog = log(Data_LR$CPI)
+Data_LR$UNRATELog = log(Data_LR$UNRATE)
+Data_LR$VIX.AdjustedLog = log(Data_LR$VIX.Adjusted)
+
+#Predictor Columns - Type: Interaction Terms
+#To involve interaction affect between Predictor variables (Pg.97)
+Data_LR$CPIxUNRATE = (Data_LR$CPI)*(Data_LR$UNRATE)
+Data_LR$CPIxVIX = (Data_LR$CPI)*(Data_LR$VIX.Adjusted)
+Data_LR$UNRATEIxVIX = (Data_LR$UNRATE)*(Data_LR$VIX.Adjusted)
+
+#'Leaps' is a package having necessary algorithms for Subset Selection
+# Various Algorithms available
+# 1. Best Subset Selection  (Pg. 235) - consider all combinations of predictor columns... if many columns exists will take (2 power p) iterations - Hence dont consider for large p
+# 2. Forward Stepwise Selection (Pg. 237) - Iterative process See Pg 237 for steps in Algo... Should be preferred when many predictor columns exist and BSS cant be used
+# 3. Backward Stepwise Selection (Pg. 239) - Iterative process See Pg 239 for steps in Algo... Should not be preferred when number of records is lesser than predictors
+install.packages('leaps')
+library(leaps)
+library(dplyr)
+#Converting to dataframe
+Data_LR = data.frame(date=index(Data_LR), coredata(Data_LR))
+#Removing specific columns which contains -Inf/Inf
+Data_LR <- Data_LR[,-c(1,12,13)]
+
+#using Best Subset Selection as Predictor columns are less... (2 power p) combinations assessed
+regfit.full <- regsubsets(Data_LR$`LogReturns.Adjusted`~., Data_LR,nvmax=40)
+#Summary of best combo of fit
+reg.summary <- summary(regfit.full)
+
+#There are two methods for choosing Best model -> (Pg. 240)
+# 1. Via Cp, BIC, Adj. R2 -> indirectly estimate test error by making an adjustment to the training error to account for the bias due to overfitting
+# 2. Validation and Cross-Validation -> Dividing Data into training and testing set and compute Test Error (Lowest Test error is best for Prediction)
+
+#We take the first approach
+#Not considering AIC, as it is proportial to Cp (basically the same) (Pg. 242)
+#In models, Cp should be Low and BIC should be low; Adj. R2 should be High (Indicates a model with low test error) (Pg. 240-243)
+
+#Plotting RSS as it varies as number of predictors increase in our model - should be low
+par (mfrow = c(2, 2))
+plot (reg.summary$rss , xlab = " Number of Variables ",
+      ylab = " RSS ", type = "l")
+
+#Plotting Adj. R2  as it varies as number of predictors increase in our model - should be high
+plot (reg.summary$adjr2 , xlab = " Number of Variables ",
+      ylab = " Adjusted RSq ", type = "l")
+position = which.max(reg.summary$adjr2)
+points(position, reg.summary$adjr2[position], col = " red ", cex = 2,
+        pch = 20)
+
+#Plotting Cp (~AIC)  as it varies as number of predictors increase in our model - should be low
+plot (reg.summary$cp, xlab = " Number of Variables ",
+      ylab = "Cp", type = "l")
+position = which.min(reg.summary$cp)
+points (position, reg.summary$cp[position], col = " red ", cex = 2,pch = 20)
+
+#Plotting BIC  as it varies as number of predictors increase in our model - should be low
+plot (reg.summary$bic , xlab = " Number of Variables ",
+      ylab = " BIC ", type = "l")
+position = which.min(reg.summary$bic)
+points(position, reg.summary$bic[position], col = " red ", cex = 2,
+        pch = 20)
+
+#As seen in Graph, 8 Predictors give lowest RSS; lowest Cp; max Adj R2; BIC at reasonable level
+#Therefore, getting coefficients uptil 8 predictors
+coef(regfit.full , 8)
+#Following are the Predictors -> UNRATE, VIX.Adjusted, UNRATE2, VIX.Adjusted2, UNRATESqrt, VIX.AdjustedSqrt, VIX.AdjustedLog, UNRATExVIX
+# Issue of Collinearity is also solved, as if collinearity exists between response and specific predictor variable
+#-> it increases RSS and decreases t-statistic, thereby we will fail to reject Null Hypothesis (Beta = 0)
+
 #################################################################################################
