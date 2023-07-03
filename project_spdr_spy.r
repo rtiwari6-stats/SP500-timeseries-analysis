@@ -11,6 +11,9 @@ library(tseries)
 library(seastests)
 library(TSstudio)
 library(astsa)
+library(car)
+library(robustbase) 
+
 
 #pull data
 getSymbols("SPY", src = 'yahoo', 
@@ -50,6 +53,12 @@ head(VIX) #from 2014 onwards only
 
 #plot it
 autoplot(VIX,ts.colour = "dodgerblue3", ylab = "VIX", main="Volatility Index (VIX) from 1993-01 to 2023-06")
+
+
+
+#try BOX COX 
+
+spy_adjusted_bc = BoxCox(spy_ts[,"SPY.Adjusted"], lambda = BoxCox.lambda(spy_ts[,"SPY.Adjusted"]))
 
 
 #create plot function for S&P 500
@@ -111,9 +120,8 @@ autoplot(decompose(UNRATE_ts), main="Decomposing UNRATE monthly series")
 
 #Note: At this point spy_monthly is stationary, CPI is seasonal but stationary and UNRATE isn't stationary.
 
-#acf for SPY$LogReturns.Adjusted
-acf(SPY$LogReturns.Adjusted)
-pacf(SPY$LogReturns.Adjusted)
+m = acf(SPY$LogReturns.Adjusted)
+print(m)
 
 #focusing on UNRATE
 #check acf
@@ -124,7 +132,6 @@ UNRATE_ts = ts(data = coredata(UNRATE), start = c(1993,1), end = c(2023,5), freq
 UNRATE_decomp = decompose(UNRATE_ts)
 UNRATE_stationary = na.omit(diff(UNRATE$UNRATE)) #detrend
 acf(UNRATE_stationary) #acf seems almost like white noise
-pacf(UNRATE_stationary)
 autoplot(UNRATE_stationary, 
          main="first difference of UNRATE monthly series", 
          ylab="UNRATE") # looks good to me!
@@ -136,7 +143,6 @@ CPI_ts = ts(data = coredata(CPI), start = c(1993,1), end = c(2023,3), frequency 
 CPI_decomp = decompose(CPI_ts)
 CPI_stationary = na.omit(diff(CPI$CPI, lag=12)) # take a seasonal difference
 acf(CPI_stationary) #acf shows some larger values and doesn't decay quickly but overall not too bad
-pacf(CPI_stationary)
 autoplot(CPI_stationary, 
          main="seasonally differenced CPI monthly series", 
          ylab="CPI") # looks good to me!
@@ -148,7 +154,6 @@ VIX = na.omit(VIX)
 adf.test(VIX$VIX.Adjusted) #p-value 0.01, stationary!
 isSeasonal(VIX$VIX.Adjusted) # TRUE but can't get stl or decompose to work so we don't do anything!
 acf(VIX$VIX.Adjusted) #this decays reasonably well
-pacf(VIX$VIX.Adjusted)
 
 #let's drop NA values
 SPY = na.omit(SPY)
@@ -208,13 +213,16 @@ lag1.plot(SPY_adjusted, corr = T, 12, col="dodgerblue3") # Log Returns plotted a
 #added extra underscore to SPY_adjusted_ because this one is numeric
 SPY_adjusted_ = as.numeric(project_data$LogReturns.Adjusted)
 CPI_val= as.numeric(project_data$CPI)
-lag2.plot(CPI_val,SPY_adjusted_, corr = T, 8, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
+lag2.plot(CPI_val,SPY_adjusted_, corr = T, 12, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
+
+#lag2.plot(SPY_adjusted_, CPI_val, corr = T, 31, col="dodgerblue3") # CPI vs lagged SimpleReturns.Adjusted values
+
 
 UNRATE_val = as.numeric(project_data$UNRATE)
-lag2.plot(UNRATE_val,SPY_adjusted_, corr = T, 8, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
+lag2.plot(UNRATE_val,SPY_adjusted_, corr = T, 12, col="dodgerblue3") # UNRATE vs lagged SimpleReturns.Adjusted values
 
 VIX_val_ = as.numeric(project_data$VIX.Adjusted)
-lag2.plot(VIX_val_,SPY_adjusted_, corr = T, 8, col="dodgerblue3") # UNRATE vs lagged VIX values
+lag2.plot(VIX_val_,SPY_adjusted_, corr = T, 12, col="dodgerblue3") # UNRATE vs lagged VIX values
 
 
 #fitting lag regression line
@@ -346,5 +354,41 @@ fit7 = lm(project_data$LogReturns.Adjusted ~ project_data$CPI +
 summary(fit7)
 broom::glance(fit7)
 
+#Model 8
+
+fit8 = lm(project_data$LogReturns.Adjusted ~ project_data$CPI + 
+            project_data$UNRATE + project_data$SPY.Volume + project_data$VIX.Adjusted)
+summary(fit8)
+broom::glance(fit8)
+
+plot(fit8)
+
+
+fit9 = lm(project_data$LogReturns.Adjusted ~ log(project_data$VIX.Adjusted))
+summary(fit9)
+
+
+#USING BOX COX, Model 1
+
+bcfit1 = lm(project_data$LogReturns.Adjusted~project_data$VIX.Adjusted)
+summary(bcfit1)
+
+bcfit2 = lm(project_data$LogReturns.Adjusted~vix_adj_bc)
+summary(bcfit2)
+
+## Box-Cox transformation of model
+#fit_1a <- lm(project_data$LogReturns.Adjusted~as.numeric(vix_adj_bc))
+#bc_fit_1a <- powerTransform(fit_1a, family = "bcnPower")
+#summary(bc_fit_1a)
+
+#LMROB- robust regression
+
+lmrob1 = lmrob(project_data$LogReturns.Adjusted ~project_data$VIX.Adjusted)
+summary(lmrob1)
+plot(lmrob1,5)
+
+lmrob2 = lmrob(project_data$LogReturns.Adjusted ~log(project_data$VIX.Adjusted))
+summary(lmrob2)
+plot(lmrob2, 5)
 
 #################################################################################################
