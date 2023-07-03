@@ -75,5 +75,21 @@ vix_spy_lm1_gls_log = gls(LogReturns.Adjusted ~ as.numeric(vix_adjusted_log_diff
 summary(vix_spy_lm1_gls_log)
 plot(vix_spy_lm1_gls_log)
 hist(resid(vix_spy_lm1_gls_log))
+qqnorm(resid(vix_spy_lm1_gls_log))
+qqline(resid(vix_spy_lm1_gls_log)) 
+shapiro.test(resid(vix_spy_lm1_gls_log)[1:5000]) #not really normal
 
+#ccf of vix and spy
+ccf(as.numeric(LogReturns.Adjusted), as.numeric(vix_adjusted_log_diff))#  really just one lag
+acf(LogReturns.Adjusted) #we have a small spike at q=1
+pacf(LogReturns.Adjusted) # large spike at p=1
 
+#lets try spy~ with lagged spy and vi (no gls this time)
+vix_spy_lm1_gls_log_lagspy1 = lm(LogReturns.Adjusted ~ as.numeric(vix_adjusted_log_diff) 
+                          + lag(LogReturns.Adjusted), 
+                          ) 
+summary(vix_spy_lm1_gls_log_lagspy1) #wow!
+plot(vix_spy_lm1_gls_log_lagspy1) # wow!
+acf(resid(vix_spy_lm1_gls_log_lagspy1)) #almost white noise!
+#is this really this good?
+vif(vix_spy_lm1_gls_log_lagspy1) # good! All < 5. So no multicollinearity.
