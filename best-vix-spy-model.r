@@ -93,3 +93,6 @@ plot(vix_spy_lm1_gls_log_lagspy1) # wow!
 acf(resid(vix_spy_lm1_gls_log_lagspy1)) #almost white noise!
 #is this really this good?
 vif(vix_spy_lm1_gls_log_lagspy1) # good! All < 5. So no multicollinearity.
+broom::glance(vix_spy_lm1_gls_log_lagspy1)#VERY low aic and bic
+shapiro.test(rstandard(vix_spy_lm1_gls_log_lagspy1)[1:5000])#hmm, not normal but can't be relied upon!
+#with such a large sample size, we can assume the mean is normally distributed.
