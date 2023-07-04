@@ -96,3 +96,58 @@ vif(vix_spy_lm1_gls_log_lagspy1) # good! All < 5. So no multicollinearity.
 broom::glance(vix_spy_lm1_gls_log_lagspy1)#VERY low aic and bic, ad r-squared about 0.523
 shapiro.test(rstandard(vix_spy_lm1_gls_log_lagspy1)[1:5000])#hmm, not normal but can't be relied upon!
 #with such a large sample size, we can assume the mean is normally distributed.
+
+
+
+# Models
+##############################################################################################
+
+# No lagging applied 
+fit10 = lm(project_data$LogReturns.Adjusted[-1] ~ project_data$CPI[-1] + 
+            project_data$UNRAT[-1] + vix_adjusted_log_diff)
+summary(fit10)
+broom::glance(fit10)
+
+plot(fit10)
+
+
+
+# Using lag 19 values of CPI and UNRATE (19 because this shifts the CPI and UNRATE series to March 1 1994). 
+# We then remove the first observation of each variable except the vix_adjusted_log_diff variable
+# so that the start date matches the start date of the vix_adjusted_log_diff variable,
+# which is Feb 02, 1994
+
+fit11 = lm(formula = project_data$LogReturns.Adjusted[-1] ~ 
+     lag(project_data$CPI, 19)[-1] + lag(project_data$UNRATE, 19)[-1] 
+   + vix_adjusted_log_diff)
+
+summary(fit11)
+broom::glance(fit11)
+
+
+# Using lag 42 values of CPI and lag 42 of UNRATE (42 because now values are lagged by 2 months)
+
+fit12 = lm(formula = project_data$LogReturns.Adjusted[-1] ~ 
+             lag(project_data$CPI, 42)[-1] + lag(project_data$UNRATE, 42)[-1] 
+           + vix_adjusted_log_diff)
+
+summary(fit12)
+broom::glance(fit12)
+
+
+
+
+# Using lag 42 values of CPI and lag 19 of UNRATE (this shifts the values of CPI by two months
+# and values of UNRATE by 1 month)
+
+
+fit13 = lm(formula = project_data$LogReturns.Adjusted[-1] ~ 
+             lag(project_data$CPI, 42)[-1] + lag(project_data$UNRATE, 19)[-1] 
+           + vix_adjusted_log_diff)
+
+summary(fit13)
+broom::glance(fit13)
+
+
+
+##############################################################################################
