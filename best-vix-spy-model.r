@@ -148,6 +148,42 @@ fit13 = lm(formula = project_data$LogReturns.Adjusted[-1] ~
 summary(fit13)
 broom::glance(fit13)
 
+#try ma(2) spy
+library(dplyr)
+fit13 = lm(project_data$LogReturns.Adjusted ~ 
+             ma(project_data$LogReturns.Adjusted,2) + 
+             lag(project_data$CPI, 1) 
+           + lag(project_data$UNRATE, 1) + c(NA,(vix_adjusted_log_diff))) #include NA for vix because it's already diffed
 
+summary(fit13)
+broom::glance(fit13)
+
+
+#try wider lags lag 1 spy, ma(2) smoothed SPY. I think this is really MA(1) based on the results.
+library(dplyr)
+fit14 = lm(project_data$LogReturns.Adjusted ~ lag(project_data$LogReturns.Adjusted, 1)+
+             ma(project_data$LogReturns.Adjusted,2) + 
+             lag(project_data$CPI, 1) 
+           + lag(project_data$UNRATE, 1) + c(NA,(vix_adjusted_log_diff))) #include NA for vix because it's already diffed
+
+summary(fit14)
+broom::glance(fit14)
+
+#try wider lags lag 1 spy, ma(2) smoothed SPY. I think this is really MA(1) based on the results.
+library(dplyr)
+fit15 = lm(project_data$LogReturns.Adjusted ~ lag(project_data$LogReturns.Adjusted, 1)+
+             ma(project_data$LogReturns.Adjusted,2)) #just spy
+
+summary(fit15) #so we do need VIX
+broom::glance(fit15)
+
+
+#try wider lags lag 1 spy, ma(2) smoothed SPY. I think this is really MA(1) based on the results.
+library(dplyr)
+fit16 = lm(project_data$LogReturns.Adjusted ~ lag(project_data$LogReturns.Adjusted, 1)+
+             ma(project_data$LogReturns.Adjusted,2)+ c(NA,(vix_adjusted_log_diff))) #just spy and vix
+
+summary(fit16) #so we do need VIX
+broom::glance(fit16)
 
 ##############################################################################################
