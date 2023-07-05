@@ -199,7 +199,7 @@ y = bcnPower(LogReturns.Adjusted,
              gamma = -min(LogReturns.Adjusted)+0.01)
 fit17 = lm(y ~ vix_adjusted_log_diff_bc)
 summary(fit17)
-plot(fit11)
+plot(fit17)
 broom::glance(fit11)
 
 ##############################################################################################
