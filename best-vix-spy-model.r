@@ -186,4 +186,20 @@ fit16 = lm(project_data$LogReturns.Adjusted ~ lag(project_data$LogReturns.Adjust
 summary(fit16) #so we do need VIX
 broom::glance(fit16)
 
+#let's try powerTransform
+vix_adjusted_log_diff_bc = powerTransform(as.numeric(vix_adjusted_log_diff), family="bcnPower")
+vix_adjusted_log_diff_bc = bcnPower(vix_adjusted_log_diff, 
+                                    vix_adjusted_log_diff_bc$lambda, 
+                                    gamma = -min(vix_adjusted_log_diff)+0.01)
+LogReturns.Adjusted_bc = powerTransform(lm(LogReturns.Adjusted ~ 
+                            vix_adjusted_log_diff_bc ),
+                       family = "bcnPower")
+y = bcnPower(LogReturns.Adjusted, 
+             LogReturns.Adjusted_bc$lambda, 
+             gamma = -min(LogReturns.Adjusted)+0.01)
+fit17 = lm(y ~ vix_adjusted_log_diff_bc)
+summary(fit17)
+plot(fit11)
+broom::glance(fit11)
+
 ##############################################################################################
