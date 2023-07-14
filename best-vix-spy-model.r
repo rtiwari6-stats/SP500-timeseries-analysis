@@ -203,3 +203,81 @@ plot(fit17)
 broom::glance(fit11)
 
 ##############################################################################################
+
+
+###########################################################################################
+
+# ARMA, MA, AR models
+
+
+# Fitting ARMA(1,0) = AR(1) for SPY$LogReturns.Adjusted
+
+
+(arma_model_1 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,0)))
+
+stats::tsdiag(arma_model_1)
+
+AIC(arma_model_1)
+BIC(arma_model_1)
+
+
+# Fitting ARMA(0,1) for SPY$LogReturns.Adjusted
+
+
+(arma_model_2 <- arima(x = project_data$LogReturns.Adjusted, order = c(0,0,1)))
+
+stats::tsdiag(arma_model_2)
+
+AIC(arma_model_2)
+BIC(arma_model_2)
+
+# Fitting ARMA(1,1) for SPY$LogReturns.Adjusted
+
+
+(arma_model_3 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,1)))
+
+stats::tsdiag(arma_model_3)
+
+AIC(arma_model_3)
+BIC(arma_model_3)
+
+
+# Fitting ARMA(1,0)  for SPY$LogReturns.Adjusted, this timing including CPI and UNRATE
+
+xreg <- as.matrix(project_data[,c("UNRATE","CPI")])
+
+(arma_model_4 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,0), 
+  xreg = xreg))
+
+stats::tsdiag(arma_model_4)
+
+AIC(arma_model_4)
+BIC(arma_model_4)
+
+# Fitting ARMA(0,1)  for SPY$LogReturns.Adjusted, this timing including CPI and UNRATE
+
+xreg <- as.matrix(project_data[,c("UNRATE","CPI")])
+
+(arma_model_5 <- arima(x = project_data$LogReturns.Adjusted, order = c(0,0,1), 
+                       xreg = xreg))
+
+stats::tsdiag(arma_model_5)
+
+AIC(arma_model_5)
+BIC(arma_model_5)
+
+
+# Fitting ARMA(1,1)  for SPY$LogReturns.Adjusted, this timing including CPI and UNRATE
+
+xreg <- as.matrix(project_data[,c("UNRATE","CPI")])
+
+(arma_model_6 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,1), 
+                       xreg = xreg))
+
+stats::tsdiag(arma_model_6)
+
+AIC(arma_model_6)
+BIC(arma_model_6)
+
+
+##########################################################################################
