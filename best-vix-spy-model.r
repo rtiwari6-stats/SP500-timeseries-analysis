@@ -220,6 +220,12 @@ stats::tsdiag(arma_model_1)
 AIC(arma_model_1)
 BIC(arma_model_1)
 
+#YuleWalkerEstimates for AR(1) <- Similar to the above coeffcients
+arma_model_1.yw = ar.yw(project_data$LogReturns.Adjusted,order=1)
+arma_model_1.yw$x.mean
+arma_model_1.yw$ar
+sqrt(diag(arma_model_1.yw$asy.var.coef))
+arma_model_1.yw$var.pred
 
 # Fitting ARMA(0,1) for SPY$LogReturns.Adjusted
 
@@ -231,6 +237,11 @@ stats::tsdiag(arma_model_2)
 AIC(arma_model_2)
 BIC(arma_model_2)
 
+#YuleWaker Estimates effective for AR(p) models
+#By default 'arima' function, for parameter estimation by default (unless there are missing values) is to use conditional-sum-of-squares to find starting values, then maximum likelihood
+#Fitting by Conditional sum of squares method of estimation
+(arma_model_2 <- arima(x = project_data$LogReturns.Adjusted, order = c(0,0,1),method=c("CSS")))
+
 # Fitting ARMA(1,1) for SPY$LogReturns.Adjusted
 
 
@@ -241,6 +252,10 @@ stats::tsdiag(arma_model_3)
 AIC(arma_model_3)
 BIC(arma_model_3)
 
+#YuleWaker Estimates effective for AR(p) models
+#By default 'arima' function, for parameter estimation by default (unless there are missing values) is to use conditional-sum-of-squares to find starting values, then maximum likelihood
+#Fitting by Conditional sum of squares method of estimation
+(arma_model_3 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,1),method=c("CSS")))
 
 # Fitting ARMA(1,0)  for SPY$LogReturns.Adjusted, this timing including CPI and UNRATE
 
