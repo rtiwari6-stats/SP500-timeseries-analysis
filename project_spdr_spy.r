@@ -58,7 +58,7 @@ autoplot(VIX,ts.colour = "dodgerblue3", ylab = "VIX", main="Volatility Index (VI
 
 #try BOX COX 
 
-spy_adjusted_bc = BoxCox(spy_ts[,"SPY.Adjusted"], lambda = BoxCox.lambda(spy_ts[,"SPY.Adjusted"]))
+
 
 
 #create plot function for S&P 500
@@ -120,7 +120,7 @@ autoplot(decompose(UNRATE_ts), main="Decomposing UNRATE monthly series")
 
 #Note: At this point spy_monthly is stationary, CPI is seasonal but stationary and UNRATE isn't stationary.
 
-m = acf(SPY$LogReturns.Adjusted)
+m = acf(na.omit(SPY$LogReturns.Adjusted))
 print(m)
 
 #focusing on UNRATE
