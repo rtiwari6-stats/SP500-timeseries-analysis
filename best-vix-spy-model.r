@@ -379,7 +379,7 @@ stats::tsdiag(arma_model_12)
 
 AIC(arma_model_12)
 BIC(arma_model_12)
-=======
+#=======
 
 
 
