@@ -14,7 +14,6 @@ library(astsa)
 library(car)
 library(robustbase) 
 
-
 #pull data
 getSymbols("SPY", src = 'yahoo', 
            from = "1993-01-29", to = "2023-06-07") # Note this can be current date too
@@ -24,14 +23,14 @@ str(SPY)
 #print some data
 head(SPY)
 #plot
-autoplot(SPY,ts.colour = "dodgerblue3", ylab = "SPY", main="SPY from 1993-01 to 2023-05")
+p1 = autoplot(SPY$SPY.Adjusted,ts.colour = "dodgerblue3", ylab = "SPY", main="SPY from 1993-01 to 2023-05")
 
 #Using getSymbols for fred data too to get XTS types
 getSymbols.FRED("UNRATE", from = "1993-01-29", to = "2023-06-07", env=globalenv()) #unemployment rate 
 #NOTE: Data is till 2023-05-01 only
 head(UNRATE)
 #plot
-autoplot(UNRATE,ts.colour = "dodgerblue3", ylab = "Unemployment Rate", main="Unemployment Rate from 1993-01 to 2023-05")
+p2 = autoplot(UNRATE,ts.colour = "dodgerblue3", ylab = "UNRATE", main="UNRATE from 1993-01 to 2023-05")
 
 getSymbols.FRED("CPALTT01USM657N", from = "1993-01-29", to = "2023-06-07", env=globalenv()) #CPI or inflation
 CPI = CPALTT01USM657N
@@ -39,7 +38,7 @@ names(CPI) = c("CPI")
 #NOTE: Only available till 2023-03-01
 head(CPI)
 #plot
-autoplot(CPI,ts.colour = "dodgerblue3", ylab = "Consumer Price Index", main="Consumer Price Index from 1993-01 to 2023-03")
+p3 = autoplot(CPI,ts.colour = "dodgerblue3", ylab = "CPI", main="CPI from 1993-01 to 2023-03")
 
 #using getSymbols to get VIX data from Y!
 #pull data
@@ -47,19 +46,14 @@ getSymbols("^VIX", src = 'yahoo',
            from = "1993-01-29", to = "2023-06-07") # Note this can be current date too
 #XTS object!
 str(VIX)
+#plot
+p4 = autoplot(VIX$VIX.Adjusted,ts.colour = "dodgerblue3", ylab = "VIX", main="VIX from 1993-01 to 2023-06")
+grid.arrange(p1, p2, p3, p4, ncol=2)
 
 #print some data
 head(VIX) #from 2014 onwards only
 
-#plot it
-autoplot(VIX,ts.colour = "dodgerblue3", ylab = "VIX", main="Volatility Index (VIX) from 1993-01 to 2023-06")
-
-
-
 #try BOX COX 
-
-
-
 
 #create plot function for S&P 500
 plot_all_spy_series = function(my_spy, title="SPY data from 1993-01-29 to 2023-06-07", nRow = 2, date_breaks=waiver(), date_labels=waiver(), angle=0){
@@ -174,6 +168,12 @@ tail(project_data)
 
 project_data$UNRATE = project_data$UNRATE/100 #remove %
 
+#getting the plots
+q1 = autoplot(project_data$LogReturns.Adjusted,ts.colour = "dodgerblue3", ylab = "diff(log(SPY))", main="diff(log(SPY)) from 1993-01 to 2023-05")
+q2 = autoplot(project_data$UNRATE,ts.colour = "dodgerblue3", ylab = "diff(UNRATE)", main="diff(UNRATE) from 1993-01 to 2023-05")
+q3 = autoplot(project_data$CPI,ts.colour = "dodgerblue3", ylab = "diff(CPI,12)", main="diff(CPI,12) Index from 1993-01 to 2023-03")
+q4 = autoplot(vix_adjusted_log_diff,ts.colour = "dodgerblue3", ylab = "diff(log(VIX))", main="diff(log(VIX)) from 1993-01 to 2023-06")
+grid.arrange(p1, q1, p2,q2, p3, q3, p4,q4, ncol=2)
 
 #CCF of UNRATE and S&P500 
 ccf(as.numeric(project_data$UNRATE), as.numeric(project_data$LogReturns.Adjusted), 
