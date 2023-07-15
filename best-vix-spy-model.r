@@ -21,9 +21,13 @@ vix_adjusted_log_diff = na.omit(diff(log(project_data$VIX.Adjusted)))
 acf(vix_adjusted_diff) #very good now
 adf.test(vix_adjusted_diff) #looks good
 plot(vix_adjusted_diff) #much more stabilized
-acf(vix_adjusted_log_diff) #great
+acf(vix_adjusted_log_diff, main="VIX Log-Differenced vs SPY Log Adjusted Returns") #great
 adf.test(vix_adjusted_log_diff)# looks good
 plot(vix_adjusted_log_diff) # much better
+pacf(vix_adjusted_log_diff, main="VIX Log-Differenced vs SPY Log Adjusted Returns")
+ccf(as.numeric(vix_adjusted_log_diff),as.numeric(project_data$LogReturns.Adjusted),
+    ylab = "CCF", main="VIX Log-Differenced vs SPY Log Adjusted Returns")
+
 
 #simple ols with diff
 vix_spy_lm1 = lm(project_data$LogReturns.Adjusted[-1] ~ vix_adjusted_diff)
@@ -295,4 +299,80 @@ AIC(arma_model_6)
 BIC(arma_model_6)
 
 
+# Fitting ARMA(1,0)  for SPY$LogReturns.Adjusted, this time including CPI, UNRATE, and VIX (Adjusted Log-Diff)
+
+xreg <- as.matrix(project_data[,c("UNRATE","CPI","VIX.Adjusted.1")])
+
+(arma_model_7 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,0), 
+                       xreg = xreg))
+
+stats::tsdiag(arma_model_7)
+
+AIC(arma_model_7)
+BIC(arma_model_7)
+
+
+# Fitting ARMA(0,1)  for SPY$LogReturns.Adjusted, this time including CPI, UNRATE, and VIX (Adjusted Log-Diff)
+
+xreg <- as.matrix(project_data[,c("UNRATE","CPI","VIX.Adjusted.1")])
+
+(arma_model_8 <- arima(x = project_data$LogReturns.Adjusted, order = c(0,0,1), 
+                       xreg = xreg))
+
+stats::tsdiag(arma_model_8)
+
+AIC(arma_model_8)
+BIC(arma_model_8)
+
+
+# Fitting ARMA(1,1)  for SPY$LogReturns.Adjusted, this time including CPI, UNRATE, and VIX (Adjusted Log-Diff)
+
+xreg <- as.matrix(project_data[,c("UNRATE","CPI","VIX.Adjusted.1")])
+
+(arma_model_9 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,1), 
+                       xreg = xreg))
+
+stats::tsdiag(arma_model_9)
+
+AIC(arma_model_9)
+BIC(arma_model_9)
+
+
+# Fitting ARMA(1,0)  for SPY$LogReturns.Adjusted, this time including  VIX (Adjusted Log-Diff)
+
+xreg <- as.matrix(project_data[,"VIX.Adjusted.1"])
+
+(arma_model_10 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,0), 
+                       xreg = xreg))
+
+stats::tsdiag(arma_model_10)
+
+AIC(arma_model_10)
+BIC(arma_model_10)
+
+
+# Fitting ARMA(0,1)  for SPY$LogReturns.Adjusted, this time including  VIX (Adjusted Log-Diff)
+
+xreg <- as.matrix(project_data[,"VIX.Adjusted.1"])
+
+(arma_model_11 <- arima(x = project_data$LogReturns.Adjusted, order = c(0,0,1), 
+                        xreg = xreg))
+
+stats::tsdiag(arma_model_11)
+
+AIC(arma_model_11)
+BIC(arma_model_11)
+
+
+# Fitting ARMA(1,1)  for SPY$LogReturns.Adjusted, this time including  VIX (Adjusted Log-Diff)
+
+xreg <- as.matrix(project_data[,"VIX.Adjusted.1"])
+
+(arma_model_12 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,1), 
+                        xreg = xreg))
+
+stats::tsdiag(arma_model_12)
+
+AIC(arma_model_12)
+BIC(arma_model_12)
 ##########################################################################################
