@@ -164,7 +164,8 @@ CPI_stationary = na.locf(merge(CPI_stationary, foo=zoo(NA, order.by=seq(start(CP
                                                              "day",drop=F)))[, 1])
 UNRATE_stationary = na.locf(merge(UNRATE_stationary, foo=zoo(NA, order.by=seq(start(UNRATE_stationary), end(UNRATE_stationary),
                                                                            "day",drop=F)))[, 1])
-project_data = na.omit(merge.xts(SPY, CPI_stationary, UNRATE_stationary, VIX$VIX.Adjusted))
+vix_adjusted_log_diff = na.omit(diff(log(VIX$VIX.Adjusted)))
+project_data = na.omit(merge.xts(SPY, CPI_stationary, UNRATE_stationary, VIX$VIX.Adjusted, vix_adjusted_log_diff))
 head(project_data)
 tail(project_data)
 
@@ -391,4 +392,11 @@ lmrob2 = lmrob(project_data$LogReturns.Adjusted ~log(project_data$VIX.Adjusted))
 summary(lmrob2)
 plot(lmrob2, 5)
 
+#Regression using CPI, UNRATE, and VIX (Adjusted Log-Diff)
+
+# Model 9 - let's add VIX (Adjusted Log-Diff) into the model
+fit9 = lm(project_data$LogReturns.Adjusted ~ project_data$CPI + 
+            project_data$UNRATE + project_data$VIX.Adjusted.1)
+summary(fit9)
+broom::glance(fit9)
 #################################################################################################
