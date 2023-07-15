@@ -238,7 +238,7 @@ AIC(arma_model_2)
 BIC(arma_model_2)
 
 #YuleWaker Estimates effective for AR(p) models
-#By default 'arima' function, for parameter estimation by default (unless there are missing values) is to use conditional-sum-of-squares to find starting values, then maximum likelihood
+#By default 'arima' function, for parameter estimation by default (unless there are missing values) is to use conditional-sum-of-squares to find starting values, then maximum likelihood estimation (MLE)
 #Fitting by Conditional sum of squares method of estimation
 (arma_model_2 <- arima(x = project_data$LogReturns.Adjusted, order = c(0,0,1),method=c("CSS")))
 
@@ -253,7 +253,7 @@ AIC(arma_model_3)
 BIC(arma_model_3)
 
 #YuleWaker Estimates effective for AR(p) models
-#By default 'arima' function, for parameter estimation by default (unless there are missing values) is to use conditional-sum-of-squares to find starting values, then maximum likelihood
+#By default 'arima' function, for parameter estimation by default (unless there are missing values) is to use conditional-sum-of-squares to find starting values, then maximum likelihood estimation (MLE)
 #Fitting by Conditional sum of squares method of estimation
 (arma_model_3 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,1),method=c("CSS")))
 
@@ -269,6 +269,9 @@ stats::tsdiag(arma_model_4)
 AIC(arma_model_4)
 BIC(arma_model_4)
 
+#Fitting by Conditional sum of squares method of estimation
+(arma_model_4 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,0),xreg = xreg,method=c("CSS")))
+
 # Fitting ARMA(0,1)  for SPY$LogReturns.Adjusted, this timing including CPI and UNRATE
 
 xreg <- as.matrix(project_data[,c("UNRATE","CPI")])
@@ -281,6 +284,8 @@ stats::tsdiag(arma_model_5)
 AIC(arma_model_5)
 BIC(arma_model_5)
 
+#Fitting above by Conditional sum of squares method of estimation
+(arma_model_5 <- arima(x = project_data$LogReturns.Adjusted, order = c(0,0,1),xreg = xreg,method=c("CSS")))
 
 # Fitting ARMA(1,1)  for SPY$LogReturns.Adjusted, this timing including CPI and UNRATE
 
@@ -294,5 +299,6 @@ stats::tsdiag(arma_model_6)
 AIC(arma_model_6)
 BIC(arma_model_6)
 
-
+#Fitting above by Conditional sum of squares method of estimation
+(arma_model_6 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,1),xreg = xreg,method=c("CSS")))
 ##########################################################################################
