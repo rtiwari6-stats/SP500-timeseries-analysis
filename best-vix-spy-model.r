@@ -90,8 +90,8 @@ pacf(LogReturns.Adjusted) # large spike at p=1
 
 #lets try spy~ with lagged spy and vi (no gls this time)
 vix_spy_lm1_gls_log_lagspy1 = lm(LogReturns.Adjusted ~ as.numeric(vix_adjusted_log_diff) 
-                          + c(LogReturns.Adjusted[-1], NA)
-                          ) 
+                                 + c(LogReturns.Adjusted[-1], NA)
+) 
 summary(vix_spy_lm1_gls_log_lagspy1) #looks reasonable, both significant
 plot(vix_spy_lm1_gls_log_lagspy1) # qqplot isn't normal
 acf(resid(vix_spy_lm1_gls_log_lagspy1)) #almost white noise!
@@ -108,7 +108,7 @@ shapiro.test(rstandard(vix_spy_lm1_gls_log_lagspy1)[1:5000])#hmm, not normal but
 
 # No lagging applied 
 fit10 = lm(project_data$LogReturns.Adjusted[-1] ~ project_data$CPI[-1] + 
-            project_data$UNRAT[-1] + vix_adjusted_log_diff)
+             project_data$UNRAT[-1] + vix_adjusted_log_diff)
 summary(fit10)
 broom::glance(fit10)
 
@@ -122,8 +122,8 @@ plot(fit10)
 # which is Feb 02, 1994
 
 fit11 = lm(formula = project_data$LogReturns.Adjusted[-1] ~ 
-     lag(project_data$CPI, 19)[-1] + lag(project_data$UNRATE, 19)[-1] 
-   + vix_adjusted_log_diff)
+             lag(project_data$CPI, 19)[-1] + lag(project_data$UNRATE, 19)[-1] 
+           + vix_adjusted_log_diff)
 
 summary(fit11)
 broom::glance(fit11)
@@ -195,16 +195,23 @@ vix_adjusted_log_diff_bc = powerTransform(as.numeric(vix_adjusted_log_diff), fam
 vix_adjusted_log_diff_bc = bcnPower(vix_adjusted_log_diff, 
                                     vix_adjusted_log_diff_bc$lambda, 
                                     gamma = -min(vix_adjusted_log_diff)+0.01)
-LogReturns.Adjusted_bc = powerTransform(lm(LogReturns.Adjusted ~ 
-                            vix_adjusted_log_diff_bc ),
-                       family = "bcnPower")
-y = bcnPower(LogReturns.Adjusted, 
+LogReturns.Adjusted_bc = powerTransform(lm(project_data$LogReturns.Adjusted[-1] ~ 
+                                             vix_adjusted_log_diff_bc ),
+                                        family = "bcnPower")
+y = bcnPower(project_data$LogReturns.Adjusted[-1], 
              LogReturns.Adjusted_bc$lambda, 
-             gamma = -min(LogReturns.Adjusted)+0.01)
+             gamma = -min(project_data$LogReturns.Adjusted)+0.01)
 fit17 = lm(y ~ vix_adjusted_log_diff_bc)
 summary(fit17)
 plot(fit17)
-broom::glance(fit11)
+broom::glance(fit17)
+
+#CPI and vix
+fit18 = lm(formula = project_data$LogReturns.Adjusted[-1] ~ 
+             lag(project_data$CPI)[-1] + vix_adjusted_log_diff)
+
+summary(fit18)
+broom::glance(fit18)
 
 ##############################################################################################
 
@@ -213,7 +220,7 @@ broom::glance(fit11)
 
 # ARMA, MA, AR models
 
-
+project_data$VIX.Adjusted.1 = vix_adjusted_log_diff
 # Fitting ARMA(1,0) = AR(1) for SPY$LogReturns.Adjusted
 
 
@@ -266,7 +273,7 @@ BIC(arma_model_3)
 xreg <- as.matrix(project_data[,c("UNRATE","CPI")])
 
 (arma_model_4 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,0), 
-  xreg = xreg))
+                       xreg = xreg))
 
 stats::tsdiag(arma_model_4)
 
@@ -347,12 +354,27 @@ BIC(arma_model_9)
 xreg <- as.matrix(project_data[,"VIX.Adjusted.1"])
 
 (arma_model_10 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,0), 
-                       xreg = xreg))
+                        xreg = xreg))
 
 stats::tsdiag(arma_model_10)
 
 AIC(arma_model_10)
 BIC(arma_model_10)
+#try acf of residual squared
+residuals_arima_100 = arma_model_10$residuals
+#replot acf 
+acf2(residuals_arima_100, main = "residuals for arima(1,0,0)")
+acf2(residuals_arima_100^2, main="Square of residuals for arima(1,0,0)")
+#fit garch, we observe a lot of autocorrelation in square of residuals.
+#first try without VIX
+library(fGarch)
+arma_garch_model_10 = garchFit(~arma(1,0)+ garch(1,1), data=project_data$LogReturns.Adjusted, cond.dist = "std")
+summary(arma_garch_model_10) 
+plot(arma_garch_model_10, which=3)
+#GARCH and VIX together might be redundant but we still try
+arma_garch_model_10_vix = garchFit(LogReturns.Adjusted~arma(1,0)+ garch(1,1), data=project_data, cond.dist = "std")
+summary(arma_garch_model_10_vix) 
+plot(arma_garch_model_10_vix, which=3)
 
 
 # Fitting ARMA(0,1)  for SPY$LogReturns.Adjusted, this time including  VIX (Adjusted Log-Diff)
@@ -382,7 +404,18 @@ BIC(arma_model_12)
 #=======
 
 
+# Fitting ARMA(2,0)  for SPY$LogReturns.Adjusted, this time including  VIX (Adjusted Log-Diff)
 
-#Fitting above by Conditional sum of squares method of estimation
-(arma_model_6 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,1),xreg = xreg,method=c("CSS")))
-##########################################################################################
+# Fitting ARMA(0,1)  for SPY$LogReturns.Adjusted, this time including CPI, UNRATE, and VIX (Adjusted Log-Diff)
+
+xreg <- as.matrix(project_data[,c("CPI","VIX.Adjusted.1")])
+
+(arma_model_13 <- arima(x = project_data$LogReturns.Adjusted, order=c(1,0,0),
+                       xreg = xreg))
+
+stats::tsdiag(arma_model_13)
+
+AIC(arma_model_13)
+BIC(arma_model_13)
+coeftest(arma_model_13)
+residuals(arma_model_13)
