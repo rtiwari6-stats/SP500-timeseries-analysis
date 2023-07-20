@@ -372,7 +372,8 @@ arma_garch_model_10 = garchFit(~arma(1,0)+ garch(1,1), data=project_data$LogRetu
 summary(arma_garch_model_10) 
 plot(arma_garch_model_10, which=3)
 #GARCH and VIX together might be redundant but we still try
-arma_garch_model_10_vix = garchFit(LogReturns.Adjusted~arma(1,0)+ garch(1,1), data=project_data, cond.dist = "std")
+arma_garch_model_10_vix = garchFit(LogReturns.Adjusted~arma(1,0) + garch(1,1), 
+                                   data=data.frame(project_data$VIX.Adjusted.1, project_data$LogReturns.Adjusted), cond.dist = "std")
 summary(arma_garch_model_10_vix) 
 plot(arma_garch_model_10_vix, which=3)
 
