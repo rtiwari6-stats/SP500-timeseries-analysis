@@ -431,3 +431,14 @@ AIC(arma_model_13)
 BIC(arma_model_13)
 coeftest(arma_model_13)
 residuals(arma_model_13)
+
+
+# SARIMA Model using auto.sarima() 
+
+# Using auto.sarima() to on just the LogReturns variable (univariate). 
+sarima_1 <-bayesforecast::auto.sarima(project_data$LogReturns.Adjusted, chains = 1)
+
+# auto.sarima with LogReturns and CPI
+
+xreg <- as.matrix(project_data[,c("CPI")])
+sarima_2 <-bayesforecast::auto.sarima(project_data$LogReturns.Adjusted, xreg = xreg, chains = 1)
