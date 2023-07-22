@@ -362,24 +362,46 @@ AIC(arma_model_10)
 BIC(arma_model_10)
 #try acf of residual squared
 residuals_arima_100 = arma_model_10$residuals
+residuals_arima_1 = arma_model_1$residuals
 #replot acf 
-acf2(residuals_arima_100, main = "residuals for arima(1,0,0)")
-acf2(residuals_arima_100^2, main="Square of residuals for arima(1,0,0)")
+acf2(residuals_arima_100, main = "residuals for arima(1,0,0) with VIX included")
+acf2(residuals_arima_100^2, main="Square of residuals for arima(1,0,0) with VIX included")
+# look at this since we are ignoring VIX for GARCH analysis
+acf2(residuals_arima_1, main = "residuals for AR(1) SPY")
+acf2(residuals_arima_1^2, main="Square of residuals for AR(1) SPY") # here the ACF decays but PACF seems to cut off after lag 2 (or decays faster than ACF) -> GARCH(2,0) perhaps?. We try multiple models.
+
 #fit garch, we observe a lot of autocorrelation in square of residuals.
-#first try without VIX
+#first try without VIX (Use this!)
 library(fGarch)
-arma_garch_model_10 = garchFit(~arma(1,0)+ garch(1,1), data=project_data$LogReturns.Adjusted, cond.dist = "std")
-summary(arma_garch_model_10) 
-plot(arma_garch_model_10, which=3)
+par(mfrow=c(3,1))
+arma_garch_model_10_1 = garchFit(~arma(1,0)+ garch(1,1), 
+                               data=project_data$LogReturns.Adjusted, 
+                               cond.dist = "std")
+summary(arma_garch_model_10_1) 
+plot(arma_garch_model_10_1, which=3, main="arma(1,0)+ garch(1,1)")
+arma_garch_model_10_2 = garchFit(~arma(1,0)+ garch(2,2), 
+                                 data=project_data$LogReturns.Adjusted, 
+                                 cond.dist = "std")
+summary(arma_garch_model_10_2) 
+plot(arma_garch_model_10_2, which=3, main="arma(1,0)+ garch(2,2)")
+arma_garch_model_10_3 = garchFit(~arma(1,0)+ garch(2,0),  # actually an ARCH
+                                 data=project_data$LogReturns.Adjusted, 
+                                 cond.dist = "std")
+summary(arma_garch_model_10_3) 
+plot(arma_garch_model_10_3, which=3, main="arma(1,0)+ garch(2,0)")
+par(mfrow=c(1,1))
+
+
 #GARCH and VIX together might be redundant but we still try
-#VIX is getting ignored.
+#VIX is getting ignored. (Do not use!)
 arma_garch_model_10_vix = garchFit(LogReturns.Adjusted~arma(1,0) +  garch(1,1), 
-                                   data=data.frame(project_data$VIX.Adjusted.1, project_data$LogReturns.Adjusted), cond.dist = "std")
+                                   data=data.frame(project_data$VIX.Adjusted.1, 
+                                                   project_data$LogReturns.Adjusted), cond.dist = "std")
 summary(arma_garch_model_10_vix) 
 plot(arma_garch_model_10_vix, which=3)
 
 #rugarch
-#doesn't work.
+#doesn't work. (Do not use, just for experimental purposes)
 library(rugarch)
 garch_spec = ugarchspec(mean.model = list(armaOrder = c(1,0), include.mean = TRUE), 
                          variance.model = list(model = "sGARCH", garchOrder = c(1,1), external.regressors = xreg))
