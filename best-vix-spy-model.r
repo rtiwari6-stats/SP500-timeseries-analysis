@@ -397,6 +397,8 @@ summary(arma_garch_model_10_3)
 plot(arma_garch_model_10_3, which=3, main="arma(1,0)+ garch(2,0)")
 par(mfrow=c(1,1))
 
+#predict  using GARCH/AR
+predict(arma_garch_model_10_2, n.ahead=5, plot=TRUE)
 
 #GARCH and VIX together might be redundant but we still try
 #VIX is getting ignored. (Do not use!)
