@@ -348,6 +348,8 @@ stats::tsdiag(arma_model_9)
 AIC(arma_model_9)
 BIC(arma_model_9)
 
+#AutoRegression with Autocorrelated errors - No Result, Verdict uncorrelated
+acf2(resid(arma_model_9),52)
 
 # Fitting ARMA(1,0)  for SPY$LogReturns.Adjusted, this time including  VIX (Adjusted Log-Diff)
 
@@ -360,6 +362,10 @@ stats::tsdiag(arma_model_10)
 
 AIC(arma_model_10)
 BIC(arma_model_10)
+
+#AutoRegression with Autocorrelated errors - No Result, Verdict uncorrelated
+acf2(resid(arma_model_10),52)
+
 #try acf of residual squared
 residuals_arima_100 = arma_model_10$residuals
 residuals_arima_1 = arma_model_1$residuals
