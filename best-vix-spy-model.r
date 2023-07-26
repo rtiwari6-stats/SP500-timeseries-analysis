@@ -338,10 +338,9 @@ BIC(arma_model_8)
 
 # Fitting ARMA(1,1)  for SPY$LogReturns.Adjusted, this time including CPI, UNRATE, and VIX (Adjusted Log-Diff)
 
-xreg <- as.matrix(project_data[,c("UNRATE","CPI","VIX.Adjusted.1")])
-
+xreg1 <- cbind(project_data$UNRATE, project_data$CPI, project_data$VIX.Adjusted.1) # this has 3 columns 
 (arma_model_9 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,1), 
-                       xreg = xreg))
+                       xreg = xreg1))
 
 stats::tsdiag(arma_model_9)
 
@@ -351,12 +350,28 @@ BIC(arma_model_9)
 #AutoRegression with Autocorrelated errors - No Result, Verdict uncorrelated
 acf2(resid(arma_model_9),52)
 
+# mat matrix has 3 columns, which matches xreg1 above.
+# This is just a matrix of sample values for CPI, UNRATE, and VIX 
+# five days into the future. I just hard coded the values on 
+# 2023-03-31. The first column is for UNRATE, second for CPI, 
+# and last for VIX.Adjusted.1
+mat <- matrix(c(-0.001, -0.001, -0.001, -0.001, -0.001,
+              -1.004065,   -1.004065,   -1.004065,   -1.004065,   -1.004065,
+              -0.01696752, -0.01696752, -0.01696752, -0.01696752, -0.01696752), 
+              ncol = 3, nrow = 5, byrow = F)
+ 
+n.ahead <- 5
+nummy <- length(project_data$LogReturns.Adjusted)
+nureg <- time(project_data$LogReturns.Adjusted)[nummy] + seq(1,n.ahead)
+stats::predict(object = arma_model_9, n.ahead  = 5, newxreg = mat)
+
+
 # Fitting ARMA(1,0)  for SPY$LogReturns.Adjusted, this time including  VIX (Adjusted Log-Diff)
 
-xreg <- as.matrix(project_data[,"VIX.Adjusted.1"])
+xreg2 <- as.matrix(project_data[,"VIX.Adjusted.1"])
 
 (arma_model_10 <- arima(x = project_data$LogReturns.Adjusted, order = c(1,0,0), 
-                        xreg = xreg))
+                        xreg = xreg2))
 
 stats::tsdiag(arma_model_10)
 
@@ -365,6 +380,20 @@ BIC(arma_model_10)
 
 #AutoRegression with Autocorrelated errors - No Result, Verdict uncorrelated
 acf2(resid(arma_model_10),52)
+
+
+# mat matrix has 1 columns, which matches xreg2 above.
+# This is just a matrix of sample values for  VIX 
+# five days into the future. I just hard coded the values on 
+# 2023-03-31. 
+mat1 <- matrix(c( -0.01696752, -0.01696752, -0.01696752, -0.01696752, -0.01696752), 
+              ncol = 1, byrow = F)
+
+n.ahead <- 5
+nummy <- length(project_data$LogReturns.Adjusted)
+nureg <- time(project_data$LogReturns.Adjusted)[nummy] + seq(1,n.ahead)
+stats::predict(object = arma_model_10, n.ahead  = 5, newxreg = mat1)
+
 
 #try acf of residual squared
 residuals_arima_100 = arma_model_10$residuals
