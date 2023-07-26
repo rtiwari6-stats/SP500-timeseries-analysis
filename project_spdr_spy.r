@@ -22,6 +22,16 @@ str(SPY)
 
 #print some data
 head(SPY)
+
+#pull future data
+SPY_NEW = getSymbols("SPY", src = 'yahoo', 
+           from = "2023-06-08", to = "2023-06-15", auto.assign = FALSE) # Note this can be current date too
+#XTS object!
+str(SPY_NEW)
+
+#print some data
+head(SPY_NEW)
+
 #plot
 p1 = autoplot(SPY$SPY.Adjusted,ts.colour = "dodgerblue3", ylab = "SPY", main="SPY from 1993-01 to 2023-05")
 
