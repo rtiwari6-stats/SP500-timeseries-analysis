@@ -25,7 +25,7 @@ head(SPY)
 
 #pull future data
 SPY_NEW = getSymbols("SPY", src = 'yahoo', 
-           from = "2023-06-08", to = "2023-06-15", auto.assign = FALSE) # Note this can be current date too
+           from = "2023-04-01", to = "2023-04-11", auto.assign = FALSE) # Note this can be current date too
 #XTS object!
 str(SPY_NEW)
 
