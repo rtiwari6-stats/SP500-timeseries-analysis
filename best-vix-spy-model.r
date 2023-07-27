@@ -356,15 +356,46 @@ acf2(resid(arma_model_9),52)
 # 2023-03-31. The first column is for UNRATE, second for CPI, 
 # and last for VIX.Adjusted.1
 mat <- matrix(c(-0.001, -0.001, -0.001, -0.001, -0.001,
-              -1.004065,   -1.004065,   -1.004065,   -1.004065,   -1.004065,
-              -0.01696752, -0.01696752, -0.01696752, -0.01696752, -0.01696752), 
+                -1.004065,   -1.004065,   -1.004065,   -1.004065,   -1.004065,
+                -0.01696752, -0.01696752, -0.01696752, -0.01696752, -0.01696752), 
               ncol = 3, nrow = 5, byrow = F)
- 
+
 n.ahead <- 5
 nummy <- length(project_data$LogReturns.Adjusted)
 nureg <- time(project_data$LogReturns.Adjusted)[nummy] + seq(1,n.ahead)
-stats::predict(object = arma_model_9, n.ahead  = 5, newxreg = mat)
+forecast = stats::predict(object = arma_model_9, n.ahead  = 5, newxreg = mat, interval = "predict")
+forecast::accuracy(arma_model_9)
+lower_9 = as.numeric(forecast$pred) - 1.96 * as.numeric(forecast$se)
+upper_9 = as.numeric(forecast$pred) + 1.96 * as.numeric(forecast$se)
 
+#backtransform the forecasts
+vector_forecast = as.numeric(forecast$pred)
+spy_last = project_data$SPY.Adjusted[length(project_data$SPY.Adjusted)]
+spy_1 = spy_last * exp(vector_forecast[1])
+spy_2 = spy_1 *  exp(vector_forecast[2])
+spy_3 = spy_2 * exp(vector_forecast[3])
+spy_4 = spy_3 * exp(vector_forecast[4])
+spy_5 = spy_4 *  exp(vector_forecast[5])
+forecasted_spy = c(spy_1, spy_2, spy_3, spy_4, spy_5)
+
+
+#do same for PIs
+#lower
+spy_1_lw = spy_last * exp(lower_9[1])
+spy_2_lw = spy_1_lw *  exp(lower_9[2])
+spy_3_lw = spy_2_lw * exp(lower_9[3])
+spy_4_lw = spy_3_lw * exp(lower_9[4])
+spy_5_lw = spy_4_lw *  exp(lower_9[5])
+forecasted_spy_lw = c(spy_1_lw, spy_2_lw, spy_3_lw, spy_4_lw, spy_5_lw)
+#upper
+spy_1_uw = spy_last * exp(upper_9[1])
+spy_2_uw = spy_1_uw *  exp(upper_9[2])
+spy_3_uw = spy_2_uw * exp(upper_9[3])
+spy_4_uw = spy_3_uw * exp(upper_9[4])
+spy_5_uw = spy_4_uw *  exp(upper_9[5])
+forecasted_spy_uw = c(spy_1_uw, spy_2_uw, spy_3_uw, spy_4_uw, spy_5_uw)
+comparison = cbind(as.numeric(SPY_NEW$SPY.Adjusted),as.numeric(forecasted_spy), as.numeric(forecasted_spy_lw), as.numeric(forecasted_spy_uw))
+colnames(comparison) = c("Actual", "Prediction Point Estimate", "Prediction Lower Bound", "Prediction Upper Bound")
 
 # Fitting ARMA(1,0)  for SPY$LogReturns.Adjusted, this time including  VIX (Adjusted Log-Diff)
 
@@ -387,13 +418,13 @@ acf2(resid(arma_model_10),52)
 # five days into the future. I just hard coded the values on 
 # 2023-03-31. 
 mat1 <- matrix(c( -0.01696752, -0.01696752, -0.01696752, -0.01696752, -0.01696752), 
-              ncol = 1, byrow = F)
+               ncol = 1, byrow = F)
 
 n.ahead <- 5
 nummy <- length(project_data$LogReturns.Adjusted)
 nureg <- time(project_data$LogReturns.Adjusted)[nummy] + seq(1,n.ahead)
 stats::predict(object = arma_model_10, n.ahead  = 5, newxreg = mat1)
-
+forecast::accuracy(arma_model_10)
 
 #try acf of residual squared
 residuals_arima_100 = arma_model_10$residuals
@@ -410,8 +441,8 @@ acf2(residuals_arima_1^2, main="Square of residuals for AR(1) SPY") # here the A
 library(fGarch)
 par(mfrow=c(3,1))
 arma_garch_model_10_1 = garchFit(~arma(1,0)+ garch(1,1), 
-                               data=project_data$LogReturns.Adjusted, 
-                               cond.dist = "std")
+                                 data=project_data$LogReturns.Adjusted, 
+                                 cond.dist = "std")
 summary(arma_garch_model_10_1) 
 plot(arma_garch_model_10_1, which=3, main="arma(1,0)+ garch(1,1)")
 arma_garch_model_10_2 = garchFit(~arma(1,0)+ garch(2,2), 
@@ -427,7 +458,7 @@ plot(arma_garch_model_10_3, which=3, main="arma(1,0)+ garch(2,0)")
 par(mfrow=c(1,1))
 
 #predict  using GARCH/AR
-predict(arma_garch_model_10_2, n.ahead=5, plot=TRUE)
+predict(arma_garch_model_10_2, n.ahead=5, plot=TRUE, mse="uncond")
 
 #GARCH and VIX together might be redundant but we still try
 #VIX is getting ignored. (Do not use!)
@@ -441,7 +472,7 @@ plot(arma_garch_model_10_vix, which=3)
 #doesn't work. (Do not use, just for experimental purposes)
 library(rugarch)
 garch_spec = ugarchspec(mean.model = list(armaOrder = c(1,0), include.mean = TRUE), 
-                         variance.model = list(model = "sGARCH", garchOrder = c(1,1), external.regressors = xreg))
+                        variance.model = list(model = "sGARCH", garchOrder = c(1,1), external.regressors = xreg))
 
 # estimate model
 garch_fit = ugarchfit(spec = garch_spec, data = project_data$LogReturns.Adjusted, solver = 'hybrid')
@@ -482,7 +513,7 @@ BIC(arma_model_12)
 xreg <- as.matrix(project_data[,c("CPI","VIX.Adjusted.1")])
 
 (arma_model_13 <- arima(x = project_data$LogReturns.Adjusted, order=c(1,0,0),
-                       xreg = xreg))
+                        xreg = xreg))
 
 stats::tsdiag(arma_model_13)
 
