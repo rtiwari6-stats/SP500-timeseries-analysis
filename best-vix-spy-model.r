@@ -397,6 +397,30 @@ forecasted_spy_uw = c(spy_1_uw, spy_2_uw, spy_3_uw, spy_4_uw, spy_5_uw)
 comparison = cbind(as.numeric(SPY_NEW$SPY.Adjusted),as.numeric(forecasted_spy), as.numeric(forecasted_spy_lw), as.numeric(forecasted_spy_uw))
 colnames(comparison) = c("Actual", "Prediction Point Estimate", "Prediction Lower Bound", "Prediction Upper Bound")
 
+# Plot Predicted vs Actuals
+library(xts)
+
+actual <- c(409.4291, 407.1576, 406.0916, 407.6757, 408.0941)
+pred <- c(408.1826, 408.8633, 409.6441, 410.4526, 411.2697)
+low <- c(401.5724, 395.7049, 390.0158,  384.4330, 378.9364)
+up <- c(414.9016, 422.4592, 430.2602, 438.2333, 446.3618)
+
+SPY_ts <- window(SPY$SPY.Adjusted, index. = NULL, start = "2018-01-01", end = "2023-03-31")
+
+plot(SPY_ts, col="gray", xlim=as.Date(c("2018-01-01","2023-04-07")))
+
+ind <- 2023-03-31 + c(1,2,3,4,5)
+points(ind, actual, pch = 19, col = 'red')
+
+plot(x=actual, col="red", type="b",ylim=c(375, 450), main="Predicted vs Actuals", xlab="m", ylab="SPY Adjusted Returns")
+
+legend("topleft", legend=c("Actuals", "Predicted", "Prediction Intervals"),
+       col=c("red", "blue", "blue"), lty=c(1,1,2), cex=0.8)
+
+lines(pred, col="blue", type="b")
+lines(low, type="l", lty=2, col="blue")
+lines(up, type="l", lty=2, col="blue")
+
 # Fitting ARMA(1,0)  for SPY$LogReturns.Adjusted, this time including  VIX (Adjusted Log-Diff)
 
 xreg2 <- as.matrix(project_data[,"VIX.Adjusted.1"])
