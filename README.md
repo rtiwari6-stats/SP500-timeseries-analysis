@@ -11,3 +11,5 @@ type of investment fund that is traded on the stock market; the value of one sha
 cash value of S&P stock. Given the SPY time series from 1993-01-29 to 2023-03-31, our goal is to understand factors
 affecting the volatility of the stock market and forecast future stock market daily returns, assuming we invest a certain
 amount of money today.
+
+Contributors: Rohan Tiwari, Radhika Kulkarni, Manuel Sojan, Hannah Reavis, Praneeth Chitturi 
